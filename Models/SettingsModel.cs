@@ -15,6 +15,9 @@ namespace Computer_Maintenance.Models
         }
         public void SaveDataToJson(SettingsDtoData saveData)
         {
+            saveData.BackgroundColor = ColorTranslator.ToHtml(GlobalSettings.BackgroundColor);
+            saveData.TextColor = ColorTranslator.ToHtml(GlobalSettings.TextColor);
+
             string json = JsonSerializer.Serialize(saveData, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_filePathJson, json);
         }

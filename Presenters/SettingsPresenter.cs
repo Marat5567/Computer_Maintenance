@@ -1,5 +1,4 @@
 ﻿using Computer_Maintenance.DTOS;
-using Computer_Maintenance.Globals;
 using Computer_Maintenance.Models;
 using Computer_Maintenance.Views;
 
@@ -16,7 +15,6 @@ namespace Computer_Maintenance.Presenters
             _settingsView = settingsView;
 
             _settingsView.SaveSettingsClicked += OnPressedSave;
-
             _settingsView.InitItemsState += OnInitItemsState;
             _settingsView.ThemeChanged += OnThemeChanged;
         }
@@ -25,8 +23,6 @@ namespace Computer_Maintenance.Presenters
         {
             SettingsDtoData saveData = new SettingsDtoData()
             {
-                BackgroundColor = ColorTranslator.ToHtml(GlobalSettings.BackgroundColor),
-                TextColor = ColorTranslator.ToHtml(GlobalSettings.TextColor),
                 SelectedTheme = _settingsView.ThemeTypeSelected,
             };
             _settingsModel.SaveDataToJson(saveData);

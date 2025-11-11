@@ -33,7 +33,7 @@ namespace Computer_Maintenance.Controls
         {
             SaveSettingsClicked?.Invoke(this, EventArgs.Empty);
         }
-
+        
         private void radioButtonThemeLight_CheckedChanged(object sender, EventArgs e)
         {
             ThemeTypeSelected = ThemeType.Light;
@@ -45,6 +45,7 @@ namespace Computer_Maintenance.Controls
             ThemeTypeSelected = ThemeType.Dark;
             ThemeChanged?.Invoke(this, EventArgs.Empty);
         }
+
         public void SetTheme(ThemeType theme)
         {
             _themeTypeSelected = theme;

@@ -4,8 +4,7 @@ namespace Computer_Maintenance.Controls
 {
     public partial class MainControl : UserControl, IMainControlView
     {
-
-        public event EventHandler ThemeChanged;  // событие, о котором узнает Presenter
+        public event EventHandler ThemeChanged;
         public MainControl()
         {
             InitializeComponent();
@@ -15,7 +14,8 @@ namespace Computer_Maintenance.Controls
         {
         }
 
-        public void SetSettingsControl(UserControl control)
+        //Метод установки контрола настроек
+        public void SetSettingsControl(UserControl control) 
         {
             tableLayoutPanelContolsPositions.Controls.Add(control, 0, 0);
 
@@ -25,10 +25,13 @@ namespace Computer_Maintenance.Controls
             }
         }
 
+        //Метод вызываемый из presenter для обновления темы
         public void RefreshTheme(Color background, Color text)
         {
             ApplyColorsToControls(this, background, text);
         }
+
+        //Метод обновления темы всех контролоов находящихся внутри MainControl 
         private void ApplyColorsToControls(Control parent, Color background, Color text)
         {
             foreach (Control control in parent.Controls)
