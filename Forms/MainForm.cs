@@ -23,5 +23,12 @@ namespace Computer_Maintenance
             control.Dock = DockStyle.Fill;
             this.Controls.Add(control);
         }
+        public void RestartApplication()
+        {
+            Application.Restart();
+            Environment.Exit(0);
+        }
+
+
     }
 }

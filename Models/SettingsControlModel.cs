@@ -1,37 +1,32 @@
 ﻿using Computer_Maintenance.DTOS;
 using Computer_Maintenance.Enums;
 using Computer_Maintenance.Globals;
-using Computer_Maintenance.Jsons;
-using System.Text.Json;
 
 namespace Computer_Maintenance.Models
 {
     public class SettingsControlModel
     {
-        private readonly string _filePathJson;
+        private readonly string _fileName = "settings.json";
         public SettingsControlModel()
         {
-            _filePathJson = Path.Combine(BaseDirectoryPath.BaseDirectory, "settings.json"); 
         }
         public void SaveDataToJson(SettingsDtoData saveData)
         {
-            saveData.BackgroundColor = ColorTranslator.ToHtml(GlobalSettings.BackgroundColor);
-            saveData.TextColor = ColorTranslator.ToHtml(GlobalSettings.TextColor);
+            if (saveData != null)
+            {
+                saveData.BackgroundColor = ColorTranslator.ToHtml(GlobalSettings.BackgroundColor);
+                saveData.TextColor = ColorTranslator.ToHtml(GlobalSettings.TextColor);
 
-            string json = JsonSerializer.Serialize(saveData, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_filePathJson, json);
+                Core.Json.JsonService.Save(_fileName, saveData);
+            }
         }
         public SettingsDtoData LoadDataFromJson()
         {
-            if (File.Exists(_filePathJson))
+            SettingsDtoData data = Core.Json.JsonService.Load<SettingsDtoData>(_fileName);
+
+            if (data != null)
             {
-                string json = File.ReadAllText(_filePathJson);
-                SettingsDtoData data = JsonSerializer.Deserialize<SettingsDtoData>(json);
-                
-                if (data != null)
-                {
-                    return data;
-                }
+                return data;
             }
             return new SettingsDtoData();
         }

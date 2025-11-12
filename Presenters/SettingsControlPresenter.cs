@@ -27,6 +27,18 @@ namespace Computer_Maintenance.Presenters
                 SelectedTheme = _settingsView.ThemeTypeSelected,
             };
             _settingsModel.SaveDataToJson(saveData);
+            DialogResult dialogResult = Globals.Message.ShowMessage(owner: null, msg: "Перезапустить приложение для применения темы?", headerName: "Действие", buttons: MessageBoxButtons.YesNo, icon: MessageBoxIcon.Information);
+            switch (dialogResult)
+            {           
+                case DialogResult.Yes:
+                    Form form = Application.OpenForms[0];
+                    if (form is MainForm mainForm)
+                    {
+                        mainForm.RestartApplication();
+                    }
+                    break;
+            }
+
         }
         private void OnInitItemsState(object sender, EventArgs e)
         {

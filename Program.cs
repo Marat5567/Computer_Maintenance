@@ -1,8 +1,4 @@
-﻿using Computer_Maintenance.Globals;
-using Computer_Maintenance.Jsons;
-using Computer_Maintenance.Models;
-
-namespace Computer_Maintenance
+﻿namespace Computer_Maintenance
 {
     internal static class Program
     {
