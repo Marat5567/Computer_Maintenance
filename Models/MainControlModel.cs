@@ -6,5 +6,6 @@ namespace Computer_Maintenance.Models
     {
         public Color BackgroundColor { get; set; } = GlobalSettings.BackgroundColor;
         public Color TextColor { get; set; } = GlobalSettings.TextColor;
+
     }
 }

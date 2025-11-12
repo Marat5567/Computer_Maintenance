@@ -2,13 +2,12 @@
 
 namespace Computer_Maintenance.Views
 {
-    public interface ISettingsView
+    public interface ISettingsControlView
     {
         event EventHandler InitItemsState; //Событие инициализации состояния элеметов
         event EventHandler SaveSettingsClicked; //Событие нажатия кнопки сохранить
         event EventHandler ThemeChanged; //Событие изменения темы
+        void SetRadioButtonTheme(ThemeType theme); //Метод установки радио кнопки темы
         ThemeType ThemeTypeSelected { get; set; } //Свойства для выбора темы
-
-        void SetTheme(ThemeType theme); //Метод для установки цвета выбранной темы
     }
 }

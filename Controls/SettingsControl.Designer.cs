@@ -32,14 +32,15 @@
             radioButtonThemeLight = new RadioButton();
             radioButtonThemeDark = new RadioButton();
             groupBoxThemeButtons = new GroupBox();
+            label1 = new Label();
             groupBoxThemeButtons.SuspendLayout();
             SuspendLayout();
             // 
             // buttonSave
             // 
-            buttonSave.Location = new Point(20, 122);
+            buttonSave.Location = new Point(19, 122);
             buttonSave.Name = "buttonSave";
-            buttonSave.Size = new Size(176, 48);
+            buttonSave.Size = new Size(148, 48);
             buttonSave.TabIndex = 2;
             buttonSave.Text = "Сохранить";
             buttonSave.UseVisualStyleBackColor = true;
@@ -73,7 +74,7 @@
             // 
             groupBoxThemeButtons.Controls.Add(radioButtonThemeLight);
             groupBoxThemeButtons.Controls.Add(radioButtonThemeDark);
-            groupBoxThemeButtons.Location = new Point(20, 45);
+            groupBoxThemeButtons.Location = new Point(19, 62);
             groupBoxThemeButtons.Name = "groupBoxThemeButtons";
             groupBoxThemeButtons.RightToLeft = RightToLeft.No;
             groupBoxThemeButtons.Size = new Size(148, 54);
@@ -81,10 +82,22 @@
             groupBoxThemeButtons.TabStop = false;
             groupBoxThemeButtons.Text = "Тема";
             // 
+            // label1
+            // 
+            label1.Anchor = AnchorStyles.Top;
+            label1.AutoSize = true;
+            label1.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 204);
+            label1.Location = new Point(585, 10);
+            label1.Name = "label1";
+            label1.Size = new Size(114, 25);
+            label1.TabIndex = 5;
+            label1.Text = "Настройки";
+            // 
             // SettingsControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(label1);
             Controls.Add(groupBoxThemeButtons);
             Controls.Add(buttonSave);
             Name = "SettingsControl";
@@ -93,6 +106,7 @@
             groupBoxThemeButtons.ResumeLayout(false);
             groupBoxThemeButtons.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -100,5 +114,6 @@
         private RadioButton radioButtonThemeLight;
         private RadioButton radioButtonThemeDark;
         private GroupBox groupBoxThemeButtons;
+        private Label label1;
     }
 }

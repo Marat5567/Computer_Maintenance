@@ -8,37 +8,47 @@ namespace Computer_Maintenance.Presenters
     {
         private readonly IMainControlView _mainControlView;
         private readonly MainControlModel _mainControlModel;
+        private readonly SettingsControlModel _settingsControlModel;
 
         private SettingsControl _settingsControl;
-        private SettingsPresenter _settingsPresenter;
-        private SettingsModel _settingsModel;
+        private SettingsControlPresenter _settingsPresenter;
 
-        public MainControlPresenter(IMainControlView mainControlView, MainControlModel mainControlModel)
+        private HomeControl _homeControl;
+        private HomeControlPresenter _homePresenter;
+        private HomeControlModel _homeModel;
+
+        public MainControlPresenter(IMainControlView mainControlView, MainControlModel mainControlModel, SettingsControlModel settingsControlModel)
         {
             _mainControlView = mainControlView;
             _mainControlModel = mainControlModel;
+            _settingsControlModel = settingsControlModel;
 
-            _mainControlView.ThemeChanged += OnThemeChanged;
+            _mainControlView.HomeClicked += OnHomeClicked;
+            _mainControlView.SettingsClicked += OnSettingsClicked;
 
             InitializeSettingsControl();
+            InitializeHomeControl();
 
-            _mainControlView.RefreshTheme(_mainControlModel.BackgroundColor, _mainControlModel.TextColor);
-
+            _mainControlView.SetControlToTable(_homeControl); //Устанавливаем контрол главной страницы по умолчанию
         }
+        public void OnHomeClicked(object sender, EventArgs e)
+        {
+            _mainControlView.SetControlToTable(_homeControl);
+        }
+        public void OnSettingsClicked(object sender, EventArgs e)
+        {
+            _mainControlView.SetControlToTable(_settingsControl);
+        }   
         private void InitializeSettingsControl()
         {
             _settingsControl = new SettingsControl();
-            _settingsModel = new SettingsModel();
-            _settingsPresenter = new SettingsPresenter(_settingsControl, _settingsModel);
-
-            _mainControlView.SetSettingsControl(_settingsControl);
+            _settingsPresenter = new SettingsControlPresenter(_settingsControl, _settingsControlModel);
         }
-        private void OnThemeChanged(object sender, EventArgs e)
+        private void InitializeHomeControl()
         {
-            _mainControlModel.BackgroundColor = Globals.GlobalSettings.BackgroundColor;
-            _mainControlModel.TextColor = Globals.GlobalSettings.TextColor;
-
-            _mainControlView.RefreshTheme(_mainControlModel.BackgroundColor, _mainControlModel.TextColor);
+            _homeControl = new HomeControl();
+            _homeModel = new HomeControlModel();
+            _homePresenter = new HomeControlPresenter(_homeControl, _homeModel);
         }
     }
 }

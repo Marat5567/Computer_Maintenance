@@ -3,7 +3,7 @@ using Computer_Maintenance.Views;
 
 namespace Computer_Maintenance.Controls
 {
-    public partial class SettingsControl : UserControl, ISettingsView
+    public partial class SettingsControl : UserControl, ISettingsControlView
     {
         public event EventHandler InitItemsState; //Событие инициализации элеметов
         public event EventHandler SaveSettingsClicked; //Событие нажатия кнопки сохранить
@@ -27,6 +27,7 @@ namespace Computer_Maintenance.Controls
         private void SettingsControl_Load(object sender, EventArgs e)
         {
             InitItemsState?.Invoke(this, EventArgs.Empty);
+            InitColors(this);
         }
 
         private void buttonSave_Click(object sender, EventArgs e)
@@ -45,10 +46,24 @@ namespace Computer_Maintenance.Controls
             ThemeTypeSelected = ThemeType.Dark;
             ThemeChanged?.Invoke(this, EventArgs.Empty);
         }
-
-        public void SetTheme(ThemeType theme)
+        private void InitColors(UserControl userControl)
         {
-            _themeTypeSelected = theme;
+            foreach (Control control in userControl.Controls)
+            {
+                if (control is Label label)
+                {
+                    label.ForeColor = Globals.GlobalSettings.TextColor;
+                }
+            }
+
+            this.BackColor = Globals.GlobalSettings.BackgroundColor;
+            this.groupBoxThemeButtons.BackColor = Globals.GlobalSettings.BackgroundColor;
+            this.groupBoxThemeButtons.ForeColor = Globals.GlobalSettings.TextColor;
+            this.buttonSave.BackColor = Globals.GlobalSettings.BackgroundColor;
+            this.buttonSave.ForeColor = Globals.GlobalSettings.TextColor;
+        }
+        public void SetRadioButtonTheme(ThemeType theme)
+        {
             switch (theme)
             {
                 case ThemeType.Light:
@@ -58,7 +73,6 @@ namespace Computer_Maintenance.Controls
                     radioButtonThemeDark.Checked = true;
                     break;
             }
-            
         }
     }
 }

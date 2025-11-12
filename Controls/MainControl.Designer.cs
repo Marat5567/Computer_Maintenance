@@ -28,37 +28,43 @@
         /// </summary>
         private void InitializeComponent()
         {
-            pictureBox1 = new PictureBox();
-            pictureBox2 = new PictureBox();
+            pictureBoxHome = new PictureBox();
+            pictureBoxSettings = new PictureBox();
             tableLayoutPanelContolsPositions = new TableLayoutPanel();
             panelconsBottom = new Panel();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxHome).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxSettings).BeginInit();
             tableLayoutPanelContolsPositions.SuspendLayout();
             panelconsBottom.SuspendLayout();
             SuspendLayout();
             // 
-            // pictureBox1
+            // pictureBoxHome
             // 
-            pictureBox1.Anchor = AnchorStyles.Bottom;
-            pictureBox1.BackgroundImage = Resource.home;
-            pictureBox1.BackgroundImageLayout = ImageLayout.Stretch;
-            pictureBox1.Location = new Point(564, 0);
-            pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(65, 65);
-            pictureBox1.TabIndex = 0;
-            pictureBox1.TabStop = false;
+            pictureBoxHome.Anchor = AnchorStyles.Bottom;
+            pictureBoxHome.BackgroundImage = Resource.home;
+            pictureBoxHome.BackgroundImageLayout = ImageLayout.Stretch;
+            pictureBoxHome.Location = new Point(570, 5);
+            pictureBoxHome.Name = "pictureBoxHome";
+            pictureBoxHome.Size = new Size(55, 55);
+            pictureBoxHome.TabIndex = 0;
+            pictureBoxHome.TabStop = false;
+            pictureBoxHome.Click += pictureBoxHome_Click;
+            pictureBoxHome.MouseEnter += pictureBoxHome_MouseEnter;
+            pictureBoxHome.MouseLeave += pictureBoxHome_MouseLeave;
             // 
-            // pictureBox2
+            // pictureBoxSettings
             // 
-            pictureBox2.Anchor = AnchorStyles.Bottom;
-            pictureBox2.BackgroundImage = Resource.Settings_Icon;
-            pictureBox2.BackgroundImageLayout = ImageLayout.Stretch;
-            pictureBox2.Location = new Point(646, 0);
-            pictureBox2.Name = "pictureBox2";
-            pictureBox2.Size = new Size(65, 65);
-            pictureBox2.TabIndex = 0;
-            pictureBox2.TabStop = false;
+            pictureBoxSettings.Anchor = AnchorStyles.Bottom;
+            pictureBoxSettings.BackgroundImage = Resource.Settings_Icon;
+            pictureBoxSettings.BackgroundImageLayout = ImageLayout.Stretch;
+            pictureBoxSettings.Location = new Point(652, 5);
+            pictureBoxSettings.Name = "pictureBoxSettings";
+            pictureBoxSettings.Size = new Size(55, 55);
+            pictureBoxSettings.TabIndex = 0;
+            pictureBoxSettings.TabStop = false;
+            pictureBoxSettings.Click += pictureBoxSettings_Click;
+            pictureBoxSettings.MouseEnter += pictureBoxSettings_MouseEnter;
+            pictureBoxSettings.MouseLeave += pictureBoxSettings_MouseLeave;
             // 
             // tableLayoutPanelContolsPositions
             // 
@@ -78,9 +84,9 @@
             // panelconsBottom
             // 
             panelconsBottom.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-            panelconsBottom.BackColor = SystemColors.AppWorkspace;
-            panelconsBottom.Controls.Add(pictureBox2);
-            panelconsBottom.Controls.Add(pictureBox1);
+            panelconsBottom.BackColor = SystemColors.Control;
+            panelconsBottom.Controls.Add(pictureBoxSettings);
+            panelconsBottom.Controls.Add(pictureBoxHome);
             panelconsBottom.Location = new Point(3, 733);
             panelconsBottom.Name = "panelconsBottom";
             panelconsBottom.Size = new Size(1274, 64);
@@ -94,8 +100,8 @@
             Name = "MainControl";
             Size = new Size(1280, 800);
             Load += MainControl_Load;
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxHome).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxSettings).EndInit();
             tableLayoutPanelContolsPositions.ResumeLayout(false);
             panelconsBottom.ResumeLayout(false);
             ResumeLayout(false);
@@ -103,8 +109,8 @@
 
         #endregion
 
-        private PictureBox pictureBox1;
-        private PictureBox pictureBox2;
+        private PictureBox pictureBoxHome;
+        private PictureBox pictureBoxSettings;
         private TableLayoutPanel tableLayoutPanelContolsPositions;
         private Panel panelconsBottom;
     }

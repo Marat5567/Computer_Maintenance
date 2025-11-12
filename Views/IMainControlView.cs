@@ -2,9 +2,9 @@
 {
     public interface IMainControlView
     {
-        event EventHandler ThemeChanged; //Событие изменения темы из settings
-        void SetSettingsControl(UserControl control);
-        void RefreshTheme(Color background, Color text); //Метод применения темы
+        event EventHandler HomeClicked; //Событие нажатия кнопки главной страницы
+        event EventHandler SettingsClicked; //Событие нажатия кнопки настроек
+        void SetControlToTable(UserControl control);
 
     }
 }

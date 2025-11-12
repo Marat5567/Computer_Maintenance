@@ -6,10 +6,10 @@ using System.Text.Json;
 
 namespace Computer_Maintenance.Models
 {
-    public class SettingsModel
+    public class SettingsControlModel
     {
         private readonly string _filePathJson;
-        public SettingsModel()
+        public SettingsControlModel()
         {
             _filePathJson = Path.Combine(BaseDirectoryPath.BaseDirectory, "settings.json"); 
         }
@@ -32,30 +32,8 @@ namespace Computer_Maintenance.Models
                 {
                     return data;
                 }
-                else
-                {
-                    return new SettingsDtoData();
-                }
             }
             return new SettingsDtoData();
-        }
-        public void ApplyTheme(ThemeType theme)
-        {
-            (Color background, Color text) = GetColorsByTheme(theme);
-            GlobalSettings.BackgroundColor = background;
-            GlobalSettings.TextColor = text;
-        }
-        private (Color background, Color text) GetColorsByTheme(ThemeType theme)
-        {
-            switch (theme)
-            {
-                case ThemeType.Light:
-                    return (Color.White, Color.Black);
-                case ThemeType.Dark:
-                    return (Color.Black, Color.White);
-                default:
-                    return (Color.White, Color.Black);
-            }
         }
     }
 }
