@@ -30,6 +30,7 @@ namespace Computer_Maintenance.Presenters
 
             Globals.GlobalSettings.BackgroundColor = ColorTranslator.FromHtml(settingsDtoData.BackgroundColor);
             Globals.GlobalSettings.TextColor = ColorTranslator.FromHtml(settingsDtoData.TextColor);
+            Globals.GlobalSettings.CurrentTheme = settingsDtoData.SelectedTheme;
 
             _mainControl = new MainControl();
             _mainControlModel = new MainControlModel();
@@ -37,6 +38,7 @@ namespace Computer_Maintenance.Presenters
             _mainControlPresenter = new MainControlPresenter(_mainControl, _mainControlModel, _settingsControlModel);
 
             _mainFormView.SetMainControl(_mainControl);
+            _mainFormView.ApplyTheme();
         }
     }
 }

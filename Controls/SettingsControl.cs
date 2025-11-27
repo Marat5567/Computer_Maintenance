@@ -18,7 +18,6 @@ namespace Computer_Maintenance.Controls
                 _themeTypeSelected = value;
             }
         }
-
         public SettingsControl()
         {
             InitializeComponent();
@@ -27,7 +26,6 @@ namespace Computer_Maintenance.Controls
         private void SettingsControl_Load(object sender, EventArgs e)
         {
             InitItemsState?.Invoke(this, EventArgs.Empty);
-            InitColors(this);
         }
 
         private void buttonSave_Click(object sender, EventArgs e)
@@ -45,22 +43,6 @@ namespace Computer_Maintenance.Controls
         {
             ThemeTypeSelected = ThemeType.Dark;
             ThemeChanged?.Invoke(this, EventArgs.Empty);
-        }
-        private void InitColors(UserControl userControl)
-        {
-            foreach (Control control in userControl.Controls)
-            {
-                if (control is Label label)
-                {
-                    label.ForeColor = Globals.GlobalSettings.TextColor;
-                }
-            }
-
-            this.BackColor = Globals.GlobalSettings.BackgroundColor;
-            this.groupBoxThemeButtons.BackColor = Globals.GlobalSettings.BackgroundColor;
-            this.groupBoxThemeButtons.ForeColor = Globals.GlobalSettings.TextColor;
-            this.buttonSave.BackColor = Globals.GlobalSettings.BackgroundColor;
-            this.buttonSave.ForeColor = Globals.GlobalSettings.TextColor;
         }
         public void SetRadioButtonTheme(ThemeType theme)
         {

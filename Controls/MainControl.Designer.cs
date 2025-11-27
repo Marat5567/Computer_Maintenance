@@ -1,4 +1,6 @@
-﻿namespace Computer_Maintenance.Controls
+﻿using Computer_Maintenance.Globals;
+
+namespace Computer_Maintenance.Controls
 {
     partial class MainControl
     {
@@ -15,6 +17,7 @@
         {
             if (disposing && (components != null))
             {
+                ThemeManager.ThemeChanged -= ApplyTheme;
                 components.Dispose();
             }
             base.Dispose(disposing);
@@ -28,29 +31,26 @@
         /// </summary>
         private void InitializeComponent()
         {
-            pictureBoxHome = new PictureBox();
+            panelIconsBottom = new Panel();
             pictureBoxSettings = new PictureBox();
+            pictureBoxHome = new PictureBox();
             tableLayoutPanelContolsPositions = new TableLayoutPanel();
-            panelconsBottom = new Panel();
-            ((System.ComponentModel.ISupportInitialize)pictureBoxHome).BeginInit();
+            panelIconsBottom.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxSettings).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxHome).BeginInit();
             tableLayoutPanelContolsPositions.SuspendLayout();
-            panelconsBottom.SuspendLayout();
             SuspendLayout();
             // 
-            // pictureBoxHome
+            // panelIconsBottom
             // 
-            pictureBoxHome.Anchor = AnchorStyles.Bottom;
-            pictureBoxHome.BackgroundImage = Resource.home;
-            pictureBoxHome.BackgroundImageLayout = ImageLayout.Stretch;
-            pictureBoxHome.Location = new Point(570, 5);
-            pictureBoxHome.Name = "pictureBoxHome";
-            pictureBoxHome.Size = new Size(55, 55);
-            pictureBoxHome.TabIndex = 0;
-            pictureBoxHome.TabStop = false;
-            pictureBoxHome.Click += pictureBoxHome_Click;
-            pictureBoxHome.MouseEnter += pictureBoxHome_MouseEnter;
-            pictureBoxHome.MouseLeave += pictureBoxHome_MouseLeave;
+            panelIconsBottom.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            panelIconsBottom.BackColor = SystemColors.Control;
+            panelIconsBottom.Controls.Add(pictureBoxSettings);
+            panelIconsBottom.Controls.Add(pictureBoxHome);
+            panelIconsBottom.Location = new Point(3, 733);
+            panelIconsBottom.Name = "panelIconsBottom";
+            panelIconsBottom.Size = new Size(1274, 64);
+            panelIconsBottom.TabIndex = 2;
             // 
             // pictureBoxSettings
             // 
@@ -66,12 +66,26 @@
             pictureBoxSettings.MouseEnter += pictureBoxSettings_MouseEnter;
             pictureBoxSettings.MouseLeave += pictureBoxSettings_MouseLeave;
             // 
+            // pictureBoxHome
+            // 
+            pictureBoxHome.Anchor = AnchorStyles.Bottom;
+            pictureBoxHome.BackgroundImage = Resource.home;
+            pictureBoxHome.BackgroundImageLayout = ImageLayout.Stretch;
+            pictureBoxHome.Location = new Point(570, 5);
+            pictureBoxHome.Name = "pictureBoxHome";
+            pictureBoxHome.Size = new Size(55, 55);
+            pictureBoxHome.TabIndex = 0;
+            pictureBoxHome.TabStop = false;
+            pictureBoxHome.Click += pictureBoxHome_Click;
+            pictureBoxHome.MouseEnter += pictureBoxHome_MouseEnter;
+            pictureBoxHome.MouseLeave += pictureBoxHome_MouseLeave;
+            // 
             // tableLayoutPanelContolsPositions
             // 
             tableLayoutPanelContolsPositions.BackColor = SystemColors.Control;
             tableLayoutPanelContolsPositions.ColumnCount = 1;
             tableLayoutPanelContolsPositions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanelContolsPositions.Controls.Add(panelconsBottom, 0, 1);
+            tableLayoutPanelContolsPositions.Controls.Add(panelIconsBottom, 0, 1);
             tableLayoutPanelContolsPositions.Dock = DockStyle.Fill;
             tableLayoutPanelContolsPositions.Location = new Point(0, 0);
             tableLayoutPanelContolsPositions.Name = "tableLayoutPanelContolsPositions";
@@ -81,17 +95,6 @@
             tableLayoutPanelContolsPositions.Size = new Size(1280, 800);
             tableLayoutPanelContolsPositions.TabIndex = 1;
             // 
-            // panelconsBottom
-            // 
-            panelconsBottom.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-            panelconsBottom.BackColor = SystemColors.Control;
-            panelconsBottom.Controls.Add(pictureBoxSettings);
-            panelconsBottom.Controls.Add(pictureBoxHome);
-            panelconsBottom.Location = new Point(3, 733);
-            panelconsBottom.Name = "panelconsBottom";
-            panelconsBottom.Size = new Size(1274, 64);
-            panelconsBottom.TabIndex = 2;
-            // 
             // MainControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -100,18 +103,18 @@
             Name = "MainControl";
             Size = new Size(1280, 800);
             Load += MainControl_Load;
-            ((System.ComponentModel.ISupportInitialize)pictureBoxHome).EndInit();
+            panelIconsBottom.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)pictureBoxSettings).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxHome).EndInit();
             tableLayoutPanelContolsPositions.ResumeLayout(false);
-            panelconsBottom.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
 
-        private PictureBox pictureBoxHome;
+        private Panel panelIconsBottom;
         private PictureBox pictureBoxSettings;
+        private PictureBox pictureBoxHome;
         private TableLayoutPanel tableLayoutPanelContolsPositions;
-        private Panel panelconsBottom;
     }
 }

@@ -1,8 +1,13 @@
-﻿namespace Computer_Maintenance.Globals
+﻿using Computer_Maintenance.Enums;
+
+namespace Computer_Maintenance.Globals
 {
     public static class GlobalSettings
     {
+        public static ThemeType CurrentTheme { get; set; }
         public static Color BackgroundColor { get; set; }
         public static Color TextColor { get; set; }
+        public static string FontName { get; set; } = "Segoe UI";
+        public static int FontSize { get; set; }
     }
 }

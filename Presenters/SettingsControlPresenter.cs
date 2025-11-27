@@ -1,5 +1,6 @@
 ﻿using Computer_Maintenance.DTOS;
 using Computer_Maintenance.Enums;
+using Computer_Maintenance.Globals;
 using Computer_Maintenance.Models;
 using Computer_Maintenance.Views;
 
@@ -27,43 +28,18 @@ namespace Computer_Maintenance.Presenters
                 SelectedTheme = _settingsView.ThemeTypeSelected,
             };
             _settingsModel.SaveDataToJson(saveData);
-            DialogResult dialogResult = Globals.Message.ShowMessage(owner: null, msg: "Перезапустить приложение для применения темы?", headerName: "Действие", buttons: MessageBoxButtons.YesNo, icon: MessageBoxIcon.Information);
-            switch (dialogResult)
-            {           
-                case DialogResult.Yes:
-                    Form form = Application.OpenForms[0];
-                    if (form is MainForm mainForm)
-                    {
-                        mainForm.RestartApplication();
-                    }
-                    break;
-            }
-
         }
         private void OnInitItemsState(object sender, EventArgs e)
         {
-            SettingsDtoData settingsData = _settingsModel.LoadDataFromJson();
-
-            if (settingsData != null)
-            {
-                _settingsView.SetRadioButtonTheme(settingsData.SelectedTheme);
-
-                (Color backgroundColor, Color textColor) = GetThemeColors(_settingsView.ThemeTypeSelected);
-                Globals.GlobalSettings.BackgroundColor = backgroundColor;
-                Globals.GlobalSettings.TextColor = textColor;
-            }
-            else
-            {
-                _settingsView.SetRadioButtonTheme(ThemeType.Light);
-            }
+            _settingsView.SetRadioButtonTheme(Globals.GlobalSettings.CurrentTheme);
 
         }
         private void OnThemeTypeSelected(object sender, EventArgs e)
         {
-            (Color backgroundColor, Color textColor) = GetThemeColors(_settingsView.ThemeTypeSelected);
+            Globals.GlobalSettings.CurrentTheme = _settingsView.ThemeTypeSelected;
+            (GlobalSettings.BackgroundColor, GlobalSettings.TextColor) = GetThemeColors(GlobalSettings.CurrentTheme);
 
-            Globals.GlobalSettings.BackgroundColor = backgroundColor;
-            Globals.GlobalSettings.TextColor = textColor;
+            ThemeManager.SetTheme(_settingsView.ThemeTypeSelected);
         }
 
         private (Color background, Color text) GetThemeColors(ThemeType themeType)

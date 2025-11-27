@@ -1,5 +1,6 @@
-﻿using Computer_Maintenance.Views;
-using System.Windows.Forms;
+﻿using Computer_Maintenance.Enums;
+using Computer_Maintenance.Globals;
+using Computer_Maintenance.Views;
 
 namespace Computer_Maintenance.Controls
 {
@@ -7,17 +8,22 @@ namespace Computer_Maintenance.Controls
     {
         public event EventHandler HomeClicked;
         public event EventHandler SettingsClicked;
+
         private Size pictureBoxHomeSize, pictureBoxSettingSize;
         private Point pictureBoxHomePoint, pictureBoxSettingsPoint;
         public MainControl()
         {
             InitializeComponent();
         }
-
         private void MainControl_Load(object sender, EventArgs e)
         {
-            InitColors();
+            ThemeManager.ThemeChanged += ApplyTheme;
         }
+        public void ApplyTheme()
+        {
+            Globals.Methods.RefreshTheme(this);
+        }
+
         private void pictureBoxHome_Click(object sender, EventArgs e)
         {
             HomeClicked?.Invoke(this, EventArgs.Empty);
@@ -34,6 +40,8 @@ namespace Computer_Maintenance.Controls
             control.Dock = DockStyle.Fill;
             ClearCell(tableLayoutPanelContolsPositions, 0, 0);
             tableLayoutPanelContolsPositions.Controls.Add(control, 0, 0);
+            
+            ApplyTheme();
         }
 
 
@@ -47,10 +55,6 @@ namespace Computer_Maintenance.Controls
             {
                 panel.Controls.Remove(control);
             }
-        }
-        public void InitColors()
-        {
-            this.panelconsBottom.BackColor = Globals.GlobalSettings.BackgroundColor;
         }
 
         private void pictureBoxSettings_MouseEnter(object sender, EventArgs e)
@@ -90,6 +94,5 @@ namespace Computer_Maintenance.Controls
 
             pictureBoxHome.Cursor = Cursors.Default;
         }
-
     }
 }

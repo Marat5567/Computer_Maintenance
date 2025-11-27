@@ -13,7 +13,7 @@ namespace Computer_Maintenance.Controls
         private void HomeControl_Load(object sender, EventArgs e)
         {
             InitElements();
-            InitColors();
+            Globals.Methods.RefreshTheme(this);
         }
 
         private void InitElements()
@@ -29,13 +29,6 @@ namespace Computer_Maintenance.Controls
             treeViewListFunctionality.Nodes.Add(cleaningNode);
             treeViewListFunctionality.EndUpdate();
         }
-        private void InitColors()
-        {
-            this.treeViewListFunctionality.BackColor = Globals.GlobalSettings.BackgroundColor;
-            this.treeViewListFunctionality.ForeColor = Globals.GlobalSettings.TextColor;
-
-        }
-
         private void treeViewListFunctionality_AfterSelect(object sender, TreeViewEventArgs e)
         {
             FunctionalityClicked?.Invoke(this, e);

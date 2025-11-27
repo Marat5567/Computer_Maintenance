@@ -36,7 +36,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1284, 812);
             Name = "MainForm";
-            Text = "Form1";
+            Text = "Обслуживание ПК";
             Load += MainForm_Load;
             ResumeLayout(false);
         }

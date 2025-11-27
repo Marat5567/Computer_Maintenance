@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Core\Disk\" />
+    <Folder Include="Enums\SystemCleaning\" />
     <Folder Include="Resources\Icons\" />
     <Folder Include="Dlls\" />
   </ItemGroup>
