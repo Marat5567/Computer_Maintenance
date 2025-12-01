@@ -9,10 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Core\Disk\" />
-    <Folder Include="Enums\SystemCleaning\" />
+    <Folder Include="Core\Enums\" />
+    <Folder Include="Model\Entities\" />
     <Folder Include="Resources\Icons\" />
-    <Folder Include="Dlls\" />
   </ItemGroup>
 
   <ItemGroup>
