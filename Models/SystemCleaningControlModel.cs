@@ -3,17 +3,52 @@
 
     public class SystemCleaningControlModel
     {
-        // Основные системные пути
-        public readonly string TempWindowsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp");
-        public readonly string UserTempPath = Path.GetTempPath();
-        public readonly string RecycleBinPath = @"C:\$Recycle.Bin"; // Для всех пользователей
-        public readonly string PrefetchPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch");
-        public readonly string WindowsUpdateCachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download");
-        public readonly string CBSLogsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs", "CBS");
-        public readonly string MiniDumpPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Minidump");
-        public readonly string MemoryDumpsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "MEMORY.DMP");
-        public readonly string RestorePointsPath = @"C:\System Volume Information";
-        public readonly string OldInstallPackagesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Installer");
+        public static class SystemPaths
+        {
+            // Пути, которые не зависят от конкретного диска
+            public static readonly string UserTemp = Path.GetTempPath();
+            public static readonly string WindowsTemp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp");
+            public static readonly string WindowsUpdateCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download");
+            public static readonly string CBSLogs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs", "CBS");
+            public static readonly string MiniDump = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Minidump");
+            public static readonly string OldInstallPackages = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Installer");
+            public static readonly string ReportArchive = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Windows", "WER", "ReportArchive");
+            public static readonly string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        }
+
+        //МЕТОДЫ ДЛЯ ДИНАМИЧЕСКИХ ПУТЕЙ
+
+        public string GetRecycleBinPath(DriveInfoModel drive)
+        {
+            return $@"{drive.Name}\$Recycle.Bin";
+        }
+
+        public string GetMemoryDumpsPath(DriveInfoModel drive)
+        {
+            return $@"{drive.Name}Windows\MEMORY.DMP";
+        }
+
+        public string GetRestorePointsPath(DriveInfoModel drive)
+        {
+            return $@"{drive.Name}System Volume Information";
+        }
+
+        public List<string> GetBrowserCachePaths(string profile = "Default")
+        {
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return new List<string>
+        {
+            Path.Combine(local, "Google", "Chrome", "User Data", profile, "Cache"),
+            Path.Combine(local, "Google", "Chrome", "User Data", profile, "Code Cache"),
+            Path.Combine(local, "Yandex", "YandexBrowser", "User Data", profile, "Cache"),
+            Path.Combine(local, "Yandex", "YandexBrowser", "User Data", profile, "Code Cache"),
+            Path.Combine(local, "Microsoft", "Edge", "User Data", profile, "Cache"),
+            Path.Combine(local, "Microsoft", "Edge", "User Data", profile, "Code Cache"),
+            Path.Combine(local, "Opera Software", "Opera Stable", "Cache"),
+            Path.Combine(local, "Opera Software", "Opera Stable", "Code Cache"),
+        };
+        }
+
         public List<DriveInfo> GetDrives()
         {
             DriveInfo[] allDrives = DriveInfo.GetDrives();
@@ -56,178 +91,261 @@
             switch (oInfo.Option)
             {
                 case CleanOption.TempUserFiles:
-                    CleanTempUserFiles(dInfo);
-                    Globals.Message.ShowMessage(null, $"Очистка временных файлов пользователя на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //ClearUserTempFiles();
                     break;
 
                 case CleanOption.BrowserCache:
-                    Globals.Message.ShowMessage(null, $"Очистка кэша браузеров на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //ClearBrowserCache();
                     break;
 
                 case CleanOption.RecycleBin:
-                    Globals.Message.ShowMessage(null, $"Очистка корзины на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //ClearRecycleBin(dInfo);
                     break;
 
                 case CleanOption.SystemTemp:
-                    Globals.Message.ShowMessage(null, $"Очистка системных временных файлов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //ClearSystemTemp();
                     break;
 
                 case CleanOption.WindowsUpdateCache:
-                    Globals.Message.ShowMessage(null, $"Очистка кеша обновлений Windows на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //ClearWindowsUpdateCache();
                     break;
 
-                case CleanOption.RegistryCleanup:
-                    Globals.Message.ShowMessage(null, $"Очистка реестра на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //case CleanOption.SystemLogs:
+                    //    Globals.Message.ShowMessage(null, $"Очистка системных логов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //    break;
+
+                    //case CleanOption.MemoryDumps:
+                    //    Globals.Message.ShowMessage(null, $"Очистка дампов памяти на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //    break;
+
+                    //case CleanOption.MiniDumps:
+                    //    Globals.Message.ShowMessage(null, $"Очистка минидампов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //    break;
+
+                    //case CleanOption.RestorePoints:
+                    //    Globals.Message.ShowMessage(null, $"Удаление старых точек восстановления системы на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //    break;
+
+                    //case CleanOption.OldInstallPackages:
+                    //    Globals.Message.ShowMessage(null, $"Удаление старых установочных пакетов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //    break;
+
+                    //case CleanOption.CBSLogs:
+                    //    Globals.Message.ShowMessage(null, $"Очистка журналов ошибок CBS на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //    break;
+
+                    //default:
+                    //    Globals.Message.ShowMessage(null, $"Неизвестная опция очистки для диска {dInfo.Name}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //    break;
+            }
+
+        }
+        // === ОБНОВЛЕННЫЙ GetOptionSize ===
+        public long GetOptionSize(DriveInfoModel drive, OptionInfo option)
+        {
+            long size = 0;
+
+            switch (option.Option)
+            {
+                case CleanOption.TempUserFiles:
+                    size += GetDirectorySize(SystemPaths.UserTemp);
+                    break;
+
+                case CleanOption.BrowserCache:
+                    foreach (string path in GetBrowserCachePaths())
+                    {
+                        size += GetDirectorySize(path);
+                    }
+                    break;
+
+                case CleanOption.RecycleBin:
+                    size += GetDirectorySize(GetRecycleBinPath(drive));
+                    break;
+
+                case CleanOption.SystemTemp:
+                    size += GetDirectorySize(SystemPaths.WindowsTemp);
+                    size += GetDirectorySize(SystemPaths.ReportArchive);
+                    break;
+
+                case CleanOption.WindowsUpdateCache:
+                    size += GetDirectorySize(SystemPaths.WindowsUpdateCache);
                     break;
 
                 case CleanOption.SystemLogs:
-                    Globals.Message.ShowMessage(null, $"Очистка системных логов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    size += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "LogFiles"));
+                    size += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs"));
                     break;
 
                 case CleanOption.MemoryDumps:
-                    Globals.Message.ShowMessage(null, $"Очистка дампов памяти на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    string memoryDumpPath = GetMemoryDumpsPath(drive);
+                    if (File.Exists(memoryDumpPath))
+                        size += new FileInfo(memoryDumpPath).Length;
+                    size += GetDirectorySize(SystemPaths.MiniDump);
                     break;
 
                 case CleanOption.MiniDumps:
-                    Globals.Message.ShowMessage(null, $"Очистка минидампов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
-
-                case CleanOption.RestorePoints:
-                    Globals.Message.ShowMessage(null, $"Удаление старых точек восстановления системы на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
-
-                case CleanOption.OldInstallPackages:
-                    Globals.Message.ShowMessage(null, $"Удаление старых установочных пакетов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
-
-                case CleanOption.PrefetchFiles:
-                    Globals.Message.ShowMessage(null, $"Очистка Prefetch файлов на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    size += GetDirectorySize(SystemPaths.MiniDump);
                     break;
 
                 case CleanOption.CBSLogs:
-                    Globals.Message.ShowMessage(null, $"Очистка журналов ошибок CBS на диске {dInfo.Name}", "Очистка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    size += GetDirectorySize(SystemPaths.CBSLogs);
                     break;
 
-                default:
-                    Globals.Message.ShowMessage(null, $"Неизвестная опция очистки для диска {dInfo.Name}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                case CleanOption.OldInstallPackages:
+                    size += GetDirectorySize(SystemPaths.OldInstallPackages);
+                    break;
+
+                case CleanOption.RestorePoints:
+                    size += GetDirectorySize(GetRestorePointsPath(drive));
                     break;
             }
 
+            return size;
         }
-        public long GetOptionSize(DriveInfoModel dInfo, OptionInfo oInfo)
-        {
-            long size = 0;
-            try
-            {
-                switch (oInfo.Option)
-                {
-                    case CleanOption.TempUserFiles:
-                        size += GetDirectorySize(Path.GetTempPath()); // TEMP текущего процесса
-        
-                        break;
-
-                    case CleanOption.BrowserCache:
-                        size += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache"));
-                        size += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Edge", "User Data", "Default", "Cache"));
-                        break;
-
-                    case CleanOption.RecycleBin:
-                        // Можно использовать COM API для Recycle Bin, пока пример через путь
-                        size += GetDirectorySize(RecycleBinPath);
-                        break;
-
-                    case CleanOption.SystemTemp:
-                        size += GetDirectorySize(TempWindowsPath);
-                        break;
-
-                    case CleanOption.WindowsUpdateCache:
-                        size += GetDirectorySize(WindowsUpdateCachePath);
-                        break;
-
-                    case CleanOption.SystemLogs:
-                        size += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "LogFiles"));
-                        size += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs"));
-                        break;
-
-                    case CleanOption.MemoryDumps:
-                        if (File.Exists(MemoryDumpsPath)) size += new FileInfo(MemoryDumpsPath).Length;
-                        size += GetDirectorySize(MiniDumpPath);
-                        break;
-
-                    case CleanOption.MiniDumps:
-                        size += GetDirectorySize(MiniDumpPath);
-                        break;
-
-                    case CleanOption.PrefetchFiles:
-                        size += GetDirectorySize(PrefetchPath);
-                        break;
-
-                    case CleanOption.CBSLogs:
-                        size += GetDirectorySize(CBSLogsPath);
-                        break;
-
-                    case CleanOption.OldInstallPackages:
-                        size += GetDirectorySize(OldInstallPackagesPath);
-                        break;
-
-                        // Остальные опции: RestorePoints, RegistryCleanup и т.д. сложно посчитать размер напрямую
-                }
-            }
-            catch { /* Игнорируем ошибки доступа */ }
-
-            return size; // Возвращаем в байтах
-        }
-
         private long GetDirectorySize(string path)
         {
-            if (!Directory.Exists(path)) return 0;
+            if (!Directory.Exists(path))
+            {
+                return 0;
+            }
 
             long size = 0;
-            var dir = new DirectoryInfo(path);
 
             try
             {
-                // Файлы в текущей директории
-                foreach (var file in dir.GetFiles("*", SearchOption.TopDirectoryOnly))
+                DirectoryInfo dir = new DirectoryInfo(path);
+
+                FileInfo[] files;
+                try
+                {
+                    files = dir.GetFiles("*", SearchOption.TopDirectoryOnly);
+                }
+                catch (UnauthorizedAccessException) { return 0; }
+                catch (IOException) { return 0; }
+
+                foreach (FileInfo file in files)
                 {
                     try
                     {
                         size += file.Length;
                     }
-                    catch (UnauthorizedAccessException) { continue; }
-                    catch (IOException) { continue; }
+                    catch { continue; }
                 }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return 0;
-            }
 
-            // Рекурсивно обрабатываем поддиректории
-            foreach (var subDir in dir.GetDirectories("*", SearchOption.TopDirectoryOnly))
-            {
+                DirectoryInfo[] subDirs;
                 try
                 {
-                    size += GetDirectorySize(subDir.FullName);
+                    subDirs = dir.GetDirectories("*", SearchOption.TopDirectoryOnly);
                 }
-                catch (UnauthorizedAccessException) { continue; }
-                catch (IOException) { continue; }
+                catch (UnauthorizedAccessException) { return size; }
+                catch (IOException) { return size; }
+
+                foreach (DirectoryInfo subDir in subDirs)
+                {
+                    try
+                    {
+                        size += GetDirectorySize(subDir.FullName);
+                    }
+                    catch { continue; }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка доступа к {path}: {ex.Message}");
+                return 0;
             }
 
             return size;
         }
-
-
-
-        private void CleanTempUserFiles(DriveInfoModel dInfo)
+        public void ClearDirectory(string directoryPath)
         {
+            if (!Directory.Exists(directoryPath))
+            {
+                return;
+            }
 
+            try
+            {
+                DirectoryInfo dirInfo = new DirectoryInfo(directoryPath);
+
+         
+                FileInfo[] files;
+                try
+                {
+                    files = dirInfo.GetFiles("*", SearchOption.TopDirectoryOnly);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    files = Array.Empty<FileInfo>();
+                }
+                catch (IOException)
+                {
+                    files = Array.Empty<FileInfo>();
+                }
+
+                foreach (FileInfo file in files)
+                {
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch { continue; }
+                }
+
+                DirectoryInfo[] subDirs;
+                try
+                {
+                    subDirs = dirInfo.GetDirectories("*", SearchOption.TopDirectoryOnly);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    subDirs = Array.Empty<DirectoryInfo>();
+                }
+                catch (IOException)
+                {
+                    subDirs = Array.Empty<DirectoryInfo>();
+                }
+
+                foreach (DirectoryInfo subDir in subDirs)
+                {
+                    try
+                    {
+                        ClearDirectory(subDir.FullName);
+                        subDir.Delete(false);
+                    }
+                    catch { continue; }
+                }
+            }
+            catch (Exception ex)
+            {
+                //($"Ошибка очистки директории {directoryPath}: {ex.Message}");
+            }
         }
-        private string GetUserTempPath(string userName, string driveLetter)
+
+        private void ClearUserTempFiles()
         {
-            return Path.Combine(driveLetter, "Users", userName, "AppData", "Local", "Temp");
+            ClearDirectory(SystemPaths.UserTemp);
         }
-
+        private void ClearBrowserCache()
+        {
+            foreach (string path in GetBrowserCachePaths())
+            {
+                ClearDirectory(path);
+            }
+        }
+        private void ClearRecycleBin(DriveInfoModel dInfo)
+        {
+            ClearDirectory(GetRecycleBinPath(dInfo));
+        }
+        private void ClearSystemTemp()
+        {
+            ClearDirectory(SystemPaths.WindowsTemp);
+            ClearDirectory(SystemPaths.ReportArchive);
+        }
+        private void ClearWindowsUpdateCache()
+        {
+            ClearDirectory(SystemPaths.WindowsUpdateCache);
+        }
 
     }
     public enum DiskType
@@ -244,7 +362,6 @@
         RecycleBin,              // Корзина
         SystemTemp,              // Системные временные файлы
         WindowsUpdateCache,      // Кэш обновлений Windows
-        RegistryCleanup,         // Очистка реестра
         SystemLogs,              // Системные логи
         MemoryDumps,             // Файлы дампов памяти
         MiniDumps,               // Минидампы
@@ -301,13 +418,11 @@
                     new OptionInfo { Option = CleanOption.RecycleBin, Name = "Корзина", RequiresAdmin = false },
                     new OptionInfo { Option = CleanOption.SystemTemp, Name = "Системные временные файлы", RequiresAdmin = true },
                     new OptionInfo { Option = CleanOption.WindowsUpdateCache, Name = "Кэш обновлений Windows", RequiresAdmin = true },
-                    new OptionInfo { Option = CleanOption.RegistryCleanup, Name = "Очистка реестра", RequiresAdmin = true },
                     new OptionInfo { Option = CleanOption.SystemLogs, Name = "Системные логи", RequiresAdmin = true },
                     new OptionInfo { Option = CleanOption.MemoryDumps, Name = "Файлы дампов памяти", RequiresAdmin = true },
                     new OptionInfo { Option = CleanOption.MiniDumps, Name = "Минидампы", RequiresAdmin = true },
                     new OptionInfo { Option = CleanOption.RestorePoints, Name = "Старые точки восстановления системы", RequiresAdmin = true },
                     new OptionInfo { Option = CleanOption.OldInstallPackages, Name = "Старые установочные пакеты", RequiresAdmin = true },
-                    new OptionInfo { Option = CleanOption.PrefetchFiles, Name = "Prefetch файлы", RequiresAdmin = true },
                     new OptionInfo { Option = CleanOption.CBSLogs, Name = "Журналы ошибок CBS", RequiresAdmin = true },
                 }
             },
@@ -322,7 +437,6 @@
                     new OptionInfo { Option = CleanOption.SystemTemp, Name = "Временные файлы приложений", RequiresAdmin = false },
                     new OptionInfo { Option = CleanOption.MemoryDumps, Name = "Локальные дампы приложений", RequiresAdmin = false },
                     new OptionInfo { Option = CleanOption.BrowserCache, Name = "Кэш браузеров", RequiresAdmin = false },
-                    new OptionInfo { Option = CleanOption.PrefetchFiles, Name = "Временные файлы Office", RequiresAdmin = false },
                     new OptionInfo { Option = CleanOption.OldInstallPackages, Name = "Файлы автосохранения Office", RequiresAdmin = false }
                 }
             },

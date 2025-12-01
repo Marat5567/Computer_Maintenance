@@ -189,7 +189,7 @@ namespace Computer_Maintenance.Controls
                 long sizeBytes = 0;
                 optionSizes?.TryGetValue((disk.Name, opt.Option), out sizeBytes);
 
-                string sizeText = sizeBytes > 0 ? $" ({Globals.Format.FormatBytes(sizeBytes)})" : "";
+                string sizeText = sizeBytes > 0 ? $" ({Globals.Format.FormatBytes(sizeBytes)})" : " (0)";
 
                 CheckBox cb = new CheckBox
                 {
