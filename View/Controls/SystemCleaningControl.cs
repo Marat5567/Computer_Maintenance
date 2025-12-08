@@ -1,13 +1,13 @@
 ﻿using Computer_Maintenance.Core.Services;
+using Computer_Maintenance.CustomControl;
 using Computer_Maintenance.Model.Config;
-using Computer_Maintenance.Model.Enums;
-using Computer_Maintenance.Model.Models;
 using Computer_Maintenance.Model.Services;
+using Computer_Maintenance.Model.Structs;
 using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Controls
 {
-    public partial class SystemCleaningControl : UserControl, ISystemCleaningControlView
+    public partial class SystemCleaningControl : UserControl, ISystemCleaningView
     {
         public event EventHandler LoadDrivesRequested;
         public event EventHandler StartScanClicked;
@@ -15,7 +15,6 @@ namespace Computer_Maintenance.Controls
         public SystemCleaningControl()
         {
             InitializeComponent();
-            LoadDrivesRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private void SystemCleaningControl_Load(object sender, EventArgs e)
@@ -31,193 +30,247 @@ namespace Computer_Maintenance.Controls
         {
             StartCleanClicked?.Invoke(this, EventArgs.Empty);
         }
-        public void DisplayDrives(List<DriveInfoModel> drives)
+        private void buttonRefreshDrives_Click(object sender, EventArgs e)
+        {
+            LoadDrivesRequested.Invoke(this, EventArgs.Empty);
+        }
+        //<summary>
+        //Метод для вывода всех доступных дисков
+        //<summary>
+        public void ShowAvailableDrives(ref List<DriveInfo> dInfos)
         {
             flowLayoutPanelDrives.Controls.Clear();
-            Control[] controls = new Control[drives.Count];
 
-            for (int i = 0; i < drives.Count; i++)
+            Control[] controls = new Control[dInfos.Count];
+
+            for (int i = 0; i < dInfos.Count; i++)
             {
-                controls[i] = CreateDrivePanel(drives[i]);
-            }
-            flowLayoutPanelDrives.Controls.AddRange(controls);
+                long totalBytes = dInfos[i].TotalSize;
+                long freeBytes = dInfos[i].TotalFreeSpace;
+                long usedBytes = totalBytes - freeBytes;
 
-        }
-        public void DisplayInfoDrives(List<DriveInfoModel> drivesChecked, UserAccess access, Dictionary<(string DiskName, CleanOption Option), long> optionSizes)
-        {
-            flowLayoutPanelInfoDrives.Controls.Clear();
-            Control[] controls = new Control[drivesChecked.Count];
+                StorageSize total = ConvertSizeService.ConvertSize(totalBytes);
+                StorageSize free = ConvertSizeService.ConvertSize(freeBytes);
+                StorageSize used = ConvertSizeService.ConvertSize(usedBytes);
 
-            for (int i = 0; i < drivesChecked.Count; i++)
-            {
-                controls[i] = CreateInfoPanel(drivesChecked[i], access, optionSizes);
-            }
+                uint totalGB = total.GB;
+                uint freeGB = free.GB;
+                uint usedGB = used.GB;
 
-            flowLayoutPanelInfoDrives.Controls.AddRange(controls);
-        }
+                int percentUsed = totalBytes > 0 ? (int)((double)usedBytes / totalBytes * 100) : 0;
 
-        public List<DriveInfoModel> GetCheckedDrives()
-        {
-            List<DriveInfoModel> checkedDrives = new List<DriveInfoModel>();
-
-            foreach (Panel panel in flowLayoutPanelDrives.Controls.OfType<Panel>())
-            {
-                CheckBox cb = panel.Controls.OfType<CheckBox>().FirstOrDefault();
-                if (cb != null && cb.Checked)
+                Panel panelDrive = new Panel
                 {
-                    if (panel.Tag is DriveInfoModel drive)
+                    BackColor = ApplicationSettings.BackgroundColor,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Padding = new Padding(5),
+                    AutoSize = true
+                };
+
+                CheckBox checkBoxDisk = new CheckBox
+                {
+                    ForeColor = ApplicationSettings.TextColor,
+                    Text = dInfos[i].DriveType == DriveType.Fixed ? $"Локальный диск ({dInfos[i].Name.Replace(":\\", ":")})" : dInfos[i].Name.Replace(":\\", ":"),
+                    Location = new Point(10, 10),
+                    Tag = dInfos[i],
+                    AutoSize = true
+                };
+
+                CustomProgressBar progressBar = new CustomProgressBar
+                {
+                    BackColor = Color.White,
+                    Minimum = 0,
+                    Maximum = 100,
+                    Value = (int)percentUsed,
+                    Size = new Size(220, 18),
+                    Style = ProgressBarStyle.Continuous,
+                    Location = new Point(10, 35)
+                };
+
+                Label labelDetails = new Label
+                {
+                    ForeColor = ApplicationSettings.TextColor,
+                    Text = $"{free.GetSizeByType(free.GetMaxSizeType(), 1)} свободно из {total.GetSizeByType(total.GetMaxSizeType(), 1)}",
+                    //Text = $"{free.GB}, {(free.MB / 100):F0} ГБ свободно из {total.GB}, {(total.MB / 100):F0} ГБ",
+                    Location = new Point(10, 65),
+                    AutoSize = true
+                };
+
+                panelDrive.Controls.Add(checkBoxDisk);
+                panelDrive.Controls.Add(progressBar);
+                panelDrive.Controls.Add(labelDetails);
+
+                controls[i] = panelDrive;
+            }
+
+            flowLayoutPanelDrives.Controls.AddRange(controls);
+        }
+
+        //<summary>
+        //Метод для получения выбранных дисков
+        //<summary>
+        public List<DriveInfo> GetSelectedDrives()
+        {
+            List<DriveInfo> selectedDrives = new List<DriveInfo>();
+
+            foreach (Control panelControl in flowLayoutPanelDrives.Controls)
+            {
+                Panel panelDrive = (panelControl as Panel)!;
+                if (panelDrive != null)
+                {
+                    foreach (Control innerControl in panelDrive.Controls)
                     {
-                        checkedDrives.Add(drive);
+                        CheckBox checkBoxDisk = (innerControl as CheckBox)!;
+                        if (checkBoxDisk != null && checkBoxDisk.Checked)
+                        {
+                            DriveInfo driveInfo = (checkBoxDisk.Tag as DriveInfo)!;
+                            if (driveInfo != null)
+                            {
+                                selectedDrives.Add(driveInfo);
+                            }
+                        }
                     }
                 }
             }
-
-            return checkedDrives;
+            return selectedDrives;
         }
 
-        public List<(DriveInfoModel Disk, OptionInfo Option)> GetSelectedOptions()
+        //<summary>
+        //Метод для вывода выбранных дисков
+        //<summary>
+        public void ShowCheckedDrive(DriveInfo dInfo, ref List<CleaningInformation> cleaningInformation)
         {
-            var selectedOptions = new List<(DriveInfoModel, OptionInfo)>();
+            int optionCount = cleaningInformation.Count;
 
-            foreach (Panel panel in flowLayoutPanelInfoDrives.Controls.OfType<Panel>())
+            int rowCount = optionCount > 0 ? optionCount + 1 : 2;
+
+            TableLayoutPanel tablePanel = new TableLayoutPanel
             {
-                // Получаем диск из заголовка панели
-                Label titleLabel = panel.Controls.OfType<Label>().FirstOrDefault(l => l.Font.Bold);
-                if (titleLabel == null)
-                {
-                    continue;
-                }
+                BackColor = ApplicationSettings.BackgroundColor,
+                BorderStyle = BorderStyle.FixedSingle,
+                RowCount = rowCount,
+                ColumnCount = 1,
+                AutoSize = true,
+            };
 
-                string diskName = titleLabel.Text.Split(' ')[1]; // "Диск C:\" -> "C:\"
-                DriveInfoModel disk = GetCheckedDrives().FirstOrDefault(d => d.Name.Remove(2) == diskName);
-                if (disk == null) continue;
+            for (int r = 0; r < rowCount; r++)
+            {
+                tablePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, r == 0 ? 35 : 25));
+            }
 
-                // Перебираем все CheckBox панели
-                foreach (CheckBox cb in panel.Controls.OfType<CheckBox>())
+            Label labelDiskName = new Label
+            {
+                ForeColor = ApplicationSettings.TextColor,
+                Text = dInfo.DriveType == DriveType.Fixed ?
+                       $"Локальный диск ({dInfo.Name.Replace(":\\", ":")})" :
+                       dInfo.Name.Replace(":\\", ":"),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Dock = DockStyle.Fill,
+                AutoSize = true
+            };
+
+            tablePanel.Controls.Add(labelDiskName, 0, 0);
+
+            int rowIndex = 1;
+
+            if (cleaningInformation.Count == 0)
+            {
+                tablePanel.Controls.Add(new Label
                 {
-                    if (cb.Checked && cb.Tag is OptionInfo opt)
+                    Text = "Нет доступных опций очистки",
+                    ForeColor = Color.Gray,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Dock = DockStyle.Fill,
+                    AutoSize = true
+                }, 0, 1);
+            }
+            else
+            {
+                foreach (CleaningInformation cleanInfo in cleaningInformation)
+                {
+                    // Основная панель для строки
+                    Panel container = new Panel
                     {
-                        selectedOptions.Add((disk, opt));
+                        BackColor = ApplicationSettings.BackgroundColor,
+                        Dock = DockStyle.Fill,
+                        AutoSize = true,
+                        Margin = new Padding(10, 0, 0, 0)
+                    };
+
+                    // CheckBox
+                    CheckBox checkBox = new CheckBox
+                    {
+                        Text = cleanInfo.SectionName,
+                        ForeColor = ApplicationSettings.TextColor,
+                        AutoSize = true,
+                        Location = new Point(0, 0),
+                        Tag = cleanInfo
+                    };
+
+                    // Label с цветным текстом
+                    Label sizeLabel = new Label
+                    {
+                        Text = $"  [{cleanInfo.Size.GetSizeByType(cleanInfo.Size.GetMaxSizeType(), 1)}]",
+                        ForeColor = cleanInfo.Size.GetColorBySize(),
+                        AutoSize = true,
+                    };
+
+                    container.Controls.Add(checkBox);
+                    container.Controls.Add(sizeLabel);
+                    sizeLabel.Location = new Point(checkBox.Width, 0);
+
+                    tablePanel.Controls.Add(container, 0, rowIndex);
+
+                    rowIndex++;
+                }
+            }
+
+            flowLayoutPanelInfoDrives.Controls.Add(tablePanel);
+        }
+
+        //<summary>
+        //Метод для получения выбранных опций
+        //<summary>
+        public List<CleaningInformation> GetSelectedOptions()
+        {
+            List<CleaningInformation> selectedOptions = new List<CleaningInformation>();
+
+            foreach (Control panelControl in flowLayoutPanelInfoDrives.Controls)
+            {
+                Panel panelInfo = (panelControl as Panel)!;
+                if (panelInfo != null)
+                {
+                    foreach (Control innerControl in panelInfo.Controls)
+                    {
+                        CheckBox checkBoxOption = (innerControl as CheckBox)!;
+                        if (checkBoxOption != null && checkBoxOption.Checked && (checkBoxOption.Tag is CleaningInformation cleaningInfo))
+                        {
+                            selectedOptions.Add(cleaningInfo);
+                        }
                     }
                 }
             }
 
             return selectedOptions;
         }
-        public void DisplayClearInfoDrives()
+
+        ///<summary>
+        ///Метод для очистки панели выбранных дисков
+        ///<summary>
+        public void ClearCheckedDrives()
         {
+            if (flowLayoutPanelInfoDrives.Controls.Count >= 1)
+            {
+                flowLayoutPanelInfoDrives.Controls.Clear();
+            }
+        }
+        ///<summary>
+        ///Метод для очистки всех эдеметов по событию LoadDrives
+        ///<summary>
+        public void ClearAllByEvent_LoadDrives()
+        {
+            flowLayoutPanelDrives.Controls.Clear();
             flowLayoutPanelInfoDrives.Controls.Clear();
         }
-        private Panel CreateDrivePanel(DriveInfoModel dInfo)
-        {
-            Panel panel = new Panel
-            {
-                AutoSize = true,
-                BorderStyle = BorderStyle.FixedSingle,
-                Padding = new Padding(10),
-                BackColor = GlobalSettings.BackgroundColor,
-                Tag = dInfo
-            };
-
-            CheckBox checkBox = new CheckBox
-            {
-                ForeColor = GlobalSettings.TextColor,
-                Text = dInfo.Name.Remove(2),
-                Location = new Point(10, 5),
-                AutoSize = true,
-                Checked = dInfo.IsSystem
-            };
-
-            ProgressBar progressBar = new ProgressBar
-            {
-                Location = new Point(10, 30),
-                Width = 200,
-                Height = 15,
-                Style = ProgressBarStyle.Blocks,
-                Value = Math.Min(Math.Max(dInfo.PercentUsed, 0), 100)
-            };
-
-            Label labelAvailable = new Label
-            {
-                Location = new Point(10, 50),
-                AutoSize = true,
-                ForeColor = GlobalSettings.TextColor,
-                Text = $"{dInfo.FreeGB:F1} ГБ"
-            };
-
-            Label labelText1 = new Label
-            {
-                Location = new Point(80, 50),
-                AutoSize = true,
-                ForeColor = GlobalSettings.TextColor,
-                Text = "доступно из"
-            };
-
-            Label labelTotal = new Label
-            {
-                Location = new Point(160, 50),
-                AutoSize = true,
-                ForeColor = GlobalSettings.TextColor,
-                Text = $"{dInfo.TotalGB:F1} ГБ"
-            };
-
-            panel.Controls.Add(checkBox);
-            panel.Controls.Add(progressBar);
-            panel.Controls.Add(labelAvailable);
-            panel.Controls.Add(labelText1);
-            panel.Controls.Add(labelTotal);
-
-            return panel;
-        }
-
-        private Panel CreateInfoPanel(DriveInfoModel disk, UserAccess access, Dictionary<(string DiskName, CleanOption Option), long> optionSizes)
-        {
-            Panel panel = new Panel { AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(10), BackColor = GlobalSettings.BackgroundColor };
-
-            Label title = new Label
-            {
-                Text = $"Диск {disk.Name.Remove(2)} — доступные опции",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                ForeColor = GlobalSettings.TextColor,
-                Location = new Point(5, 5)
-            };
-            panel.Controls.Add(title);
-
-            int y = 35;
-            foreach (var opt in CleaningRules.Rules[disk.DiskType])
-            {
-                bool allowed = access == UserAccess.Administrator || !opt.RequiresAdmin;
-
-                long sizeBytes = 0;
-                optionSizes?.TryGetValue((disk.Name, opt.Option), out sizeBytes);
-
-                string sizeText = sizeBytes > 0 ? $" ({FormatService.FormatBytes(sizeBytes)})" : " (0)";
-
-                CheckBox cb = new CheckBox
-                {
-                    Text = allowed ? opt.Name + sizeText : opt.Name + " [требуется права админа]",
-                    AutoSize = true,
-                    Location = new Point(10, y),
-                    BackColor = GlobalSettings.BackgroundColor,
-                    ForeColor = allowed ? GlobalSettings.TextColor : Color.Red,
-                    Tag = opt,
-                    Checked = allowed
-                };
-
-                if (!allowed)
-                {
-                    cb.Checked = false;
-                    cb.Click += (s, e) => cb.Checked = false;
-                }
-
-                panel.Controls.Add(cb);
-                y += 30;
-            }
-
-            return panel;
-        }
-
-
     }
 }

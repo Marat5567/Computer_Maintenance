@@ -5,15 +5,15 @@ using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Presenters
 {
-    public class HomeControlPresenter
+    public class HomePresenter
     {
-        private readonly IHomeControlView _homeControlView;
-        private readonly HomeControlModel _homeControlModel;
+        private readonly IHomeView _homeControlView;
+        private readonly HomeModel _homeControlModel;
 
         private SystemCleaningControl _systemCleaningControl;
-        private SystemCleaningControlModel _systemCleaningControlModel;
-        private SystemCleaningControlPresenter _systemCleaningControlPresenter;
-        public HomeControlPresenter(IHomeControlView homeControlView, HomeControlModel homeControlModel)
+        private SystemCleaningModel _systemCleaningControlModel;
+        private SystemCleaningPresenter _systemCleaningControlPresenter;
+        public HomePresenter(IHomeView homeControlView, HomeModel homeControlModel)
         {
             _homeControlView = homeControlView;
             _homeControlModel = homeControlModel;
@@ -37,8 +37,8 @@ namespace Computer_Maintenance.Presenters
         private void InitializeSystemCleaningControl()
         {
             _systemCleaningControl = new SystemCleaningControl();
-            _systemCleaningControlModel = new SystemCleaningControlModel();
-            _systemCleaningControlPresenter = new SystemCleaningControlPresenter(_systemCleaningControl, _systemCleaningControlModel);
+            _systemCleaningControlModel = new SystemCleaningModel();
+            _systemCleaningControlPresenter = new SystemCleaningPresenter(_systemCleaningControl, _systemCleaningControlModel);
         }
     }
 }

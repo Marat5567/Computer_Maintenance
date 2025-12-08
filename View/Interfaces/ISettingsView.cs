@@ -2,7 +2,7 @@
 
 namespace Computer_Maintenance.View.Interfaces
 {
-    public interface ISettingsControlView
+    public interface ISettingsView
     {
         event EventHandler InitItemsState; //Событие инициализации состояния элеметов
         event EventHandler SaveSettingsClicked; //Событие нажатия кнопки сохранить

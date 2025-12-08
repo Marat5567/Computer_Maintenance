@@ -6,8 +6,8 @@ namespace Computer_Maintenance.Core.Services
     {
         public static void RefreshTheme(Control control)
         {
-            control.BackColor = GlobalSettings.BackgroundColor;
-            control.ForeColor = GlobalSettings.TextColor;
+            control.BackColor = ApplicationSettings.BackgroundColor;
+            control.ForeColor = ApplicationSettings.TextColor;
 
             foreach (Control child in control.Controls)
             {

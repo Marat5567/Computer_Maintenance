@@ -12,10 +12,10 @@ namespace Computer_Maintenance.Presenters
         private readonly MainFormModel _mainFormModel;
 
         private MainControl _mainControl;
-        private MainControlPresenter _mainControlPresenter;
-        private MainControlModel _mainControlModel;
+        private MainPresenter _mainControlPresenter;
+        private MainModel _mainControlModel;
 
-        private SettingsControlModel _settingsControlModel;
+        private SettingsModel _settingsControlModel;
 
         public MainFormPresenter(IMainFormView mainFormView, MainFormModel mainFormModel)
         {
@@ -26,17 +26,17 @@ namespace Computer_Maintenance.Presenters
         }
         private void InitializeMainControl()
         {
-            _settingsControlModel = new SettingsControlModel();
+            _settingsControlModel = new SettingsModel();
             SettingsData settingsDtoData = _settingsControlModel.LoadDataFromJson();
 
-            GlobalSettings.BackgroundColor = ColorTranslator.FromHtml(settingsDtoData.BackgroundColor);
-            GlobalSettings.TextColor = ColorTranslator.FromHtml(settingsDtoData.TextColor);
-            GlobalSettings.CurrentTheme = settingsDtoData.SelectedTheme;
+            ApplicationSettings.BackgroundColor = ColorTranslator.FromHtml(settingsDtoData.BackgroundColor);
+            ApplicationSettings.TextColor = ColorTranslator.FromHtml(settingsDtoData.TextColor);
+            ApplicationSettings.CurrentTheme = settingsDtoData.SelectedTheme;
 
             _mainControl = new MainControl();
-            _mainControlModel = new MainControlModel();
+            _mainControlModel = new MainModel();
 
-            _mainControlPresenter = new MainControlPresenter(_mainControl, _mainControlModel, _settingsControlModel);
+            _mainControlPresenter = new MainPresenter(_mainControl, _mainControlModel, _settingsControlModel);
 
             _mainFormView.SetMainControl(_mainControl);
             _mainFormView.ApplyTheme();

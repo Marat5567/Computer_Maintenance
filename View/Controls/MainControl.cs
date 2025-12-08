@@ -4,7 +4,7 @@ using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Controls
 {
-    public partial class MainControl : UserControl, IMainControlView
+    public partial class MainControl : UserControl, IMainView
     {
         public event EventHandler HomeClicked;
         public event EventHandler SettingsClicked;

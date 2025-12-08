@@ -4,18 +4,18 @@ using Computer_Maintenance.Model.DTO;
 
 namespace Computer_Maintenance.Model.Models
 {
-    public class SettingsControlModel
+    public class SettingsModel
     {
         private readonly string _fileName = "settings.json";
-        public SettingsControlModel()
+        public SettingsModel()
         {
         }
         public void SaveDataToJson(SettingsData saveData)
         {
             if (saveData != null)
             {
-                saveData.BackgroundColor = ColorTranslator.ToHtml(GlobalSettings.BackgroundColor);
-                saveData.TextColor = ColorTranslator.ToHtml(GlobalSettings.TextColor);
+                saveData.BackgroundColor = ColorTranslator.ToHtml(ApplicationSettings.BackgroundColor);
+                saveData.TextColor = ColorTranslator.ToHtml(ApplicationSettings.TextColor);
 
                 JsonService.Save(_fileName, saveData);
             }

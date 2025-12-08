@@ -3,7 +3,7 @@ using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Controls
 {
-    public partial class SettingsControl : UserControl, ISettingsControlView
+    public partial class SettingsControl : UserControl, ISettingsView
     {
         public event EventHandler InitItemsState; //Событие инициализации элеметов
         public event EventHandler SaveSettingsClicked; //Событие нажатия кнопки сохранить

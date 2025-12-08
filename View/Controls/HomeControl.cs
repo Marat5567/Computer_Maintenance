@@ -4,7 +4,7 @@ using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Controls
 {
-    public partial class HomeControl : UserControl, IHomeControlView
+    public partial class HomeControl : UserControl, IHomeView
     {
         public event EventHandler<TreeViewEventArgs> FunctionalityClicked; //Событие на выбранный функционал
         public HomeControl()

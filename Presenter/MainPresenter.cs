@@ -4,20 +4,20 @@ using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Presenters
 {
-    public class MainControlPresenter
+    public class MainPresenter
     {
-        private readonly IMainControlView _mainControlView;
-        private readonly MainControlModel _mainControlModel;
-        private readonly SettingsControlModel _settingsControlModel;
+        private readonly IMainView _mainControlView;
+        private readonly MainModel _mainControlModel;
+        private readonly SettingsModel _settingsControlModel;
 
         private SettingsControl _settingsControl;
-        private SettingsControlPresenter _settingsPresenter;
+        private SettingsPresenter _settingsPresenter;
 
         private HomeControl _homeControl;
-        private HomeControlPresenter _homePresenter;
-        private HomeControlModel _homeModel;
+        private HomePresenter _homePresenter;
+        private HomeModel _homeModel;
 
-        public MainControlPresenter(IMainControlView mainControlView, MainControlModel mainControlModel, SettingsControlModel settingsControlModel)
+        public MainPresenter(IMainView mainControlView, MainModel mainControlModel, SettingsModel settingsControlModel)
         {
             _mainControlView = mainControlView;
             _mainControlModel = mainControlModel;
@@ -42,13 +42,13 @@ namespace Computer_Maintenance.Presenters
         private void InitializeSettingsControl()
         {
             _settingsControl = new SettingsControl();
-            _settingsPresenter = new SettingsControlPresenter(_settingsControl, _settingsControlModel);
+            _settingsPresenter = new SettingsPresenter(_settingsControl, _settingsControlModel);
         }
         private void InitializeHomeControl()
         {
             _homeControl = new HomeControl();
-            _homeModel = new HomeControlModel();
-            _homePresenter = new HomeControlPresenter(_homeControl, _homeModel);
+            _homeModel = new HomeModel();
+            _homePresenter = new HomePresenter(_homeControl, _homeModel);
         }
     }
 }

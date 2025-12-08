@@ -7,12 +7,12 @@ using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Presenters
 {
-    public class SettingsControlPresenter
+    public class SettingsPresenter
     {
-        private readonly ISettingsControlView _settingsView;
-        private readonly SettingsControlModel _settingsModel;
+        private readonly ISettingsView _settingsView;
+        private readonly SettingsModel _settingsModel;
 
-        public SettingsControlPresenter(ISettingsControlView settingsView, SettingsControlModel settingsModel)
+        public SettingsPresenter(ISettingsView settingsView, SettingsModel settingsModel)
         {
             _settingsModel = settingsModel;
             _settingsView = settingsView;
@@ -32,13 +32,13 @@ namespace Computer_Maintenance.Presenters
         }
         private void OnInitItemsState(object sender, EventArgs e)
         {
-            _settingsView.SetRadioButtonTheme(GlobalSettings.CurrentTheme);
+            _settingsView.SetRadioButtonTheme(ApplicationSettings.CurrentTheme);
 
         }
         private void OnThemeTypeSelected(object sender, EventArgs e)
         {
-            GlobalSettings.CurrentTheme = _settingsView.ThemeTypeSelected;
-            (GlobalSettings.BackgroundColor, GlobalSettings.TextColor) = GetThemeColors(GlobalSettings.CurrentTheme);
+            ApplicationSettings.CurrentTheme = _settingsView.ThemeTypeSelected;
+            (ApplicationSettings.BackgroundColor, ApplicationSettings.TextColor) = GetThemeColors(ApplicationSettings.CurrentTheme);
 
             ThemeManager.SetTheme(_settingsView.ThemeTypeSelected);
         }

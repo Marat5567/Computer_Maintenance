@@ -32,11 +32,12 @@
             flowLayoutPanelDrives = new FlowLayoutPanel();
             label2 = new Label();
             panelScroolable = new Panel();
+            buttonRefreshDrives = new Button();
             tableLayoutPanelElementsPosition = new TableLayoutPanel();
             buttonStartScan = new Button();
             flowLayoutPanelInfoDrives = new FlowLayoutPanel();
-            label3 = new Label();
             buttonStartClean = new Button();
+            label3 = new Label();
             panelScroolable.SuspendLayout();
             tableLayoutPanelElementsPosition.SuspendLayout();
             SuspendLayout();
@@ -65,9 +66,10 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(3, 9);
+            label2.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            label2.Location = new Point(6, 68);
             label2.Name = "label2";
-            label2.Size = new Size(94, 15);
+            label2.Size = new Size(122, 21);
             label2.TabIndex = 2;
             label2.Text = "Все накопители";
             // 
@@ -76,6 +78,7 @@
             panelScroolable.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panelScroolable.AutoScroll = true;
             panelScroolable.BackColor = SystemColors.Control;
+            panelScroolable.Controls.Add(buttonRefreshDrives);
             panelScroolable.Controls.Add(tableLayoutPanelElementsPosition);
             panelScroolable.Controls.Add(label3);
             panelScroolable.Controls.Add(label2);
@@ -83,6 +86,16 @@
             panelScroolable.Name = "panelScroolable";
             panelScroolable.Size = new Size(891, 821);
             panelScroolable.TabIndex = 4;
+            // 
+            // buttonRefreshDrives
+            // 
+            buttonRefreshDrives.Location = new Point(6, 16);
+            buttonRefreshDrives.Name = "buttonRefreshDrives";
+            buttonRefreshDrives.Size = new Size(150, 42);
+            buttonRefreshDrives.TabIndex = 6;
+            buttonRefreshDrives.Text = "Обновить накопители";
+            buttonRefreshDrives.UseVisualStyleBackColor = true;
+            buttonRefreshDrives.Click += buttonRefreshDrives_Click;
             // 
             // tableLayoutPanelElementsPosition
             // 
@@ -94,7 +107,7 @@
             tableLayoutPanelElementsPosition.Controls.Add(buttonStartScan, 0, 1);
             tableLayoutPanelElementsPosition.Controls.Add(flowLayoutPanelInfoDrives, 0, 2);
             tableLayoutPanelElementsPosition.Controls.Add(buttonStartClean, 0, 3);
-            tableLayoutPanelElementsPosition.Location = new Point(3, 36);
+            tableLayoutPanelElementsPosition.Location = new Point(3, 89);
             tableLayoutPanelElementsPosition.Name = "tableLayoutPanelElementsPosition";
             tableLayoutPanelElementsPosition.RowCount = 4;
             tableLayoutPanelElementsPosition.RowStyles.Add(new RowStyle());
@@ -124,14 +137,6 @@
             flowLayoutPanelInfoDrives.Size = new Size(879, 0);
             flowLayoutPanelInfoDrives.TabIndex = 6;
             // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(517, 196);
-            label3.Name = "label3";
-            label3.Size = new Size(0, 15);
-            label3.TabIndex = 3;
-            // 
             // buttonStartClean
             // 
             buttonStartClean.Location = new Point(3, 61);
@@ -141,6 +146,14 @@
             buttonStartClean.Text = "Начать очистку";
             buttonStartClean.UseVisualStyleBackColor = true;
             buttonStartClean.Click += buttonStartClean_Click;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(517, 196);
+            label3.Name = "label3";
+            label3.Size = new Size(0, 15);
+            label3.TabIndex = 3;
             // 
             // SystemCleaningControl
             // 
@@ -170,5 +183,6 @@
         private TableLayoutPanel tableLayoutPanelElementsPosition;
         private FlowLayoutPanel flowLayoutPanelInfoDrives;
         private Button buttonStartClean;
+        private Button buttonRefreshDrives;
     }
 }

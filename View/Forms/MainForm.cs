@@ -1,6 +1,4 @@
 ﻿using Computer_Maintenance.Core.Services;
-using Computer_Maintenance.Model.Config;
-using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Models;
 using Computer_Maintenance.Presenters;
 using Computer_Maintenance.View.Interfaces;
@@ -23,11 +21,9 @@ namespace Computer_Maintenance
             switch (isAdmin)
             {
                 case true:
-                    Access.CurrentAccess = UserAccess.Administrator;
                     this.Text = "Обслуживание ПК [Администратор]";
                     break;
                 case false:
-                    Access.CurrentAccess = UserAccess.User;
                     this.Text = "Обслуживание ПК [Ползователь]";
                     break;
             }
