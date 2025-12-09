@@ -1,5 +1,6 @@
 ﻿using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Structs;
+using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
 namespace Computer_Maintenance.Model.Config
 {
@@ -41,8 +42,9 @@ namespace Computer_Maintenance.Model.Config
                         Pattern = new CleaningInformation_Pattern
                         {
                             Type = PatternType.All,
+                            RecursiveDelete = true,
                         },
-                        ClearRecursive = true,
+                        RecursiveSearch = false
                     }
                 );
             }
@@ -66,8 +68,9 @@ namespace Computer_Maintenance.Model.Config
                                 Pattern = new CleaningInformation_Pattern
                                 {
                                     Type = PatternType.All,
+                                    RecursiveDelete = false,
                                 },
-                                ClearRecursive = false,
+                                RecursiveSearch = false
                             }
                         );
                     }
@@ -80,20 +83,21 @@ namespace Computer_Maintenance.Model.Config
                 string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-                string temPath = Path.GetTempPath();
-                if (Directory.Exists(temPath))
+                string tempPath = Path.GetTempPath();
+                if (Directory.Exists(tempPath))
                 {
                     locations.Add(
                         new CleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UserTemp,
                             SectionName = "Временные файлы текущего пользователя",
-                            Path = temPath,
+                            Path = tempPath,
                             Pattern = new CleaningInformation_Pattern
                             {
-                                Type = PatternType.All
+                                Type = PatternType.All,
+                                RecursiveDelete = true,
                             },
-                            ClearRecursive = true,
+                            RecursiveSearch = false
                         }
                     );
                 }
@@ -114,10 +118,11 @@ namespace Computer_Maintenance.Model.Config
                                 IncludePattern = new List<string>
                                 {
                                     "thumbcache_*.db",
-                                    "iconcache_*.db"
-                                }
+                                    "iconcache_*.db",
+                                },
+                                RecursiveDelete = true,
                             },
-                            ClearRecursive = false,
+                            RecursiveSearch = true
                         }
                     );
                 }
@@ -134,9 +139,10 @@ namespace Computer_Maintenance.Model.Config
                             Pattern = new 
                             CleaningInformation_Pattern 
                             { 
-                                Type = PatternType.All
+                                Type = PatternType.All,
+                                RecursiveDelete = false,
                             },
-                            ClearRecursive = false
+                            RecursiveSearch = false
                         }
                     );
                 }
@@ -150,12 +156,13 @@ namespace Computer_Maintenance.Model.Config
                             TypeCleaning = TypeCleaning.D3DSCache,
                             SectionName = "Временные файлы DirectX",
                             Path = D3DSCache,
-                            Pattern = new 
-                            CleaningInformation_Pattern 
-                            { 
+                            Pattern = new
+                            CleaningInformation_Pattern
+                            {
                                 Type = PatternType.All,
+                                RecursiveDelete = true,
                             },
-                            ClearRecursive = true
+                            RecursiveSearch = false
                         }
                     );
                 }
@@ -177,9 +184,10 @@ namespace Computer_Maintenance.Model.Config
                                     "ReportArchive", 
                                     "ReportQueue",
                                     "Temp"
-                                }
+                                },
+                                RecursiveDelete = true,
                             },
-                            ClearRecursive = true
+                            RecursiveSearch = true,
                         }
                     );
                 }
@@ -200,9 +208,10 @@ namespace Computer_Maintenance.Model.Config
                                 {
                                     "Temp", 
                                     "TempState"
-                                }
+                                },
+                                RecursiveDelete = true,
                             },
-                            ClearRecursive = true,
+                            RecursiveSearch = true
                         }
                     );
                 }

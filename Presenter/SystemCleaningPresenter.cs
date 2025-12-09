@@ -53,20 +53,20 @@ namespace Computer_Maintenance.Presenters
                 for (int i = 0; i < cleaningInformation.Count; i++)
                 {
                     int index = i;
-                    //tasks.Add(Task.Run(() =>
-                    //{
+                    tasks.Add(Task.Run(() =>
+                    {
                         cleaningInformation[index].Size = _model.GetSizeSection(cleaningInformation[index]);
-                    //}));
+                    }));
                 }
 
-                //try
-                //{
-                //    await Task.WhenAll(tasks);
-                //}
-                //catch (Exception ex)
-                //{
-                //    ShowError($"Ошибка: {ex.Message}");
-                //}
+                try
+                {
+                    await Task.WhenAll(tasks);
+                }
+                catch (Exception ex)
+                {
+                    ShowError($"Ошибка: {ex.Message}");
+                }
 
 
                 _view.ShowCheckedDrive(dInfo, ref cleaningInformation);

@@ -27,7 +27,28 @@ namespace Computer_Maintenance.Model.Services
             {
                 return false;
             }
-
+        }
+        public static long GetSize(string path)
+        {
+            try
+            {
+                return new FileInfo(path).Length;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        public static string GetName(string path)
+        {
+            try
+            {
+                return Path.GetFileName(path);
+            }
+            catch
+            {
+                return String.Empty;
+            }
         }
     }
 }

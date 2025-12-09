@@ -3,7 +3,9 @@ using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace Computer_Maintenance.Model.Models
 {
@@ -50,72 +52,400 @@ namespace Computer_Maintenance.Model.Models
         {
             long totalSizeBytes = 0;
 
-            totalSizeBytes = GetSize(cleaningInformation.Path, cleaningInformation.ClearRecursive, cleaningInformation.Pattern);
+            PatternType type = cleaningInformation.Pattern.Type;
+            string path = cleaningInformation.Path;
+            bool recursiveSearch = cleaningInformation.RecursiveSearch;
+            bool recursiveDelete = cleaningInformation.Pattern.RecursiveDelete;
+            List<string> patternInclude = cleaningInformation.Pattern.IncludePattern;
+
+            switch (type)
+            {
+                case PatternType.All:
+                    totalSizeBytes = GetAllFiles(path, recursiveSearch || recursiveDelete);
+                    break;
+                case PatternType.File:
+                    totalSizeBytes = GetMatchingFiles(path, recursiveSearch, recursiveDelete, patternInclude);
+                    break;
+                case PatternType.Folder:
+                    totalSizeBytes = GetFilesInMatchingFolders(path, recursiveSearch, recursiveDelete, patternInclude);
+                    break;
+            }
 
             return ConvertSizeService.ConvertSize(totalSizeBytes);
+
         }
 
-        /// <summary>
-        /// Метод для получения размера файлов
-        /// </summary>
 
-        public long GetSize(string? path, bool? recursive, CleaningInformation_Pattern pattern)
+
+        private long GetAllFiles(string path, bool recursiveSerch)
         {
             long size = 0;
 
-            if (pattern.Type == PatternType.All || pattern.Type == PatternType.File)
+            foreach (string filePath in DirectoryService.GetFiles(path))
             {
-                if (!DirectoryService.Exists(path))
+                if (FileService.HasAccess(filePath))
                 {
-                    return 0;
+                    size += FileService.GetSize(filePath);
                 }
+            }
 
-                string[] files = DirectoryService.GetFiles(path);
-
-                foreach (string file in files)
+            if (recursiveSerch)
+            {
+                foreach (string dirPath in DirectoryService.GetDirectories(path))
                 {
-                    if (FileService.HasAccess(file))
+                    if (DirectoryService.HasAccess(dirPath))
                     {
-                        size += file.Length;
+                        size += GetAllFiles(dirPath, true);
                     }
                 }
             }
-
             return size;
         }
 
+        private long GetMatchingFiles(string path, bool recursiveSearch, bool recursiveDelete, List<string>patterns) 
+        {
+            long size = 0;
+
+            foreach (string filePath in DirectoryService.GetFiles(path))
+            {
+                if (FileService.HasAccess(filePath) && MathPattern(filePath, patterns, false))
+                {
+                    size += FileService.GetSize(filePath);
+                }
+            }
+
+            if (recursiveSearch)
+            {
+                foreach (string dirPath in DirectoryService.GetDirectories(path))
+                {
+                    if (DirectoryService.HasAccess(dirPath))
+                    {
+                        size += GetMatchingFiles(dirPath, recursiveSearch, recursiveDelete, patterns);
+                    }
+                }
+            }
+            return size;
+        }
+
+        private long GetFilesInMatchingFolders(string path, bool recursiveSearch, bool recursiveDelete, List<string>patterns)
+        {
+            long size = 0;
+
+            foreach (string dirPath in DirectoryService.GetDirectories(path))
+            {
+                if (DirectoryService.HasAccess(path))
+                {
+                    if (MathPattern(dirPath, patterns, true))
+                    {
+                        size += GetAllFiles(dirPath, recursiveDelete);
+                    }
+                    if (recursiveSearch)
+                    {
+                        size += GetFilesInMatchingFolders(dirPath, recursiveSearch, recursiveDelete, patterns);
+                    }
+                }
+            }
+            return size;
+        }
+
+        // 1. Метод для PatternType.All - считает ВСЕ файлы
+        private long CalculateAllFilesSize(string folderPath, bool recursive)
+        {
+            long totalSize = 0;
+
+            if (!DirectoryService.Exists(folderPath))
+                return 0;
+
+            try
+            {
+                // Считаем файлы в текущей папке
+                string[] files = DirectoryService.GetFiles(folderPath);
+                foreach (string filePath in files)
+                {
+                    if (FileService.HasAccess(filePath))
+                    {
+                        totalSize += FileService.GetSize(filePath);
+                    }
+                }
+
+                // Если нужна рекурсия - обрабатываем подпапки
+                if (recursive)
+                {
+                    string[] subfolders = DirectoryService.GetDirectories(folderPath);
+                    foreach (string subfolderPath in subfolders)
+                    {
+                        if (DirectoryService.HasAccess(subfolderPath))
+                        {
+                            totalSize += CalculateAllFilesSize(subfolderPath, true);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Логирование ошибок
+            }
+
+            return totalSize;
+        }
+
+        // 2. Метод для PatternType.File - считает файлы по паттерну
+        private long CalculateFilesByPatternSize(string folderPath, bool recursive, CleaningInformation_Pattern pattern)
+        {
+            long totalSize = 0;
+
+            try
+            {
+                // Проверяем файлы в текущей папке
+                string[] files = DirectoryService.GetFiles(folderPath);
+                foreach (string filePath in files)
+                {
+                    if (FileService.HasAccess(filePath) &&
+                        MathPattern(filePath, pattern.IncludePattern, false))
+                    {
+                        totalSize += FileService.GetSize(filePath);
+                    }
+                }
+
+                // Если нужна рекурсия - обрабатываем подпапки
+                if (recursive)
+                {
+                    string[] subfolders = DirectoryService.GetDirectories(folderPath);
+                    foreach (string subfolderPath in subfolders)
+                    {
+                        if (DirectoryService.HasAccess(subfolderPath))
+                        {
+                            totalSize += CalculateFilesByPatternSize(subfolderPath, true, pattern);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Логирование ошибок
+            }
+
+            return totalSize;
+        }
+
+        // 3. Метод для PatternType.Folder - ищет папки по паттерну и считает ВСЕ в них
+        private long CalculateFoldersByPatternSize(string folderPath, bool recursive, CleaningInformation_Pattern pattern)
+        {
+            long totalSize = 0;
+
+            if (!DirectoryService.Exists(folderPath))
+                return 0;
+
+            try
+            {
+                // Проверяем ВСЕ подпапки на совпадение с паттерном
+                string[] subfolders = DirectoryService.GetDirectories(folderPath);
+
+                foreach (string subfolderPath in subfolders)
+                {
+                    if (!DirectoryService.HasAccess(subfolderPath))
+                        continue;
+
+                    // Проверяем, совпадает ли папка с паттерном
+                    if (MathPattern(subfolderPath, pattern.IncludePattern, true))
+                    {
+                        // Если совпала - считаем ВСЕ файлы в ней (рекурсивно)
+                        totalSize += CalculateAllFilesSize(subfolderPath, true);
+                    }
+
+                    // Если нужна рекурсия - продолжаем поиск в подпапках
+                    // (даже если текущая папка совпала, нужно искать другие совпадения вглубь)
+                    if (recursive)
+                    {
+                        totalSize += CalculateFoldersByPatternSize(subfolderPath, true, pattern);
+                    }
+                }
+            }
+            catch
+            {
+                // Логирование ошибок
+            }
+
+            return totalSize;
+        }
+
+
+        //private long GetSize(string path, bool recursive, CleaningInformation_Pattern pattern)
+        //{
+        //    long size = 0;
+
+        //    if (!DirectoryService.Exists(path))
+        //    {
+        //        return 0;
+        //    }
+        //    if ((pattern.Type & (PatternType.File | PatternType.All)) != 0)
+        //    {
+        //        try
+        //        {
+        //            string[] files = DirectoryService.GetFiles(path);
+
+        //            foreach (string filePath in files)
+        //            {
+        //                if (FileService.HasAccess(filePath))
+        //                {
+        //                    bool includeFile = false;
+
+        //                    if ((pattern.Type & PatternType.File) != 0)
+        //                    {
+        //                        includeFile = MathPattern(filePath, pattern.IncludePattern, false);
+        //                    }
+        //                    else if ((pattern.Type & PatternType.All) != 0)
+        //                    {
+        //                        includeFile = true;
+        //                    }
+        //                    if (includeFile)
+        //                    {
+        //                        size += FileService.GetSize(filePath);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        catch
+        //        {
+
+        //        }
+        //    }
+        //    if ((pattern.Type & (PatternType.Folder | PatternType.File | PatternType.All)) != 0 && recursive)
+        //    {
+
+        //        try
+        //        {
+        //            string[] directories = DirectoryService.GetDirectories(path);
+
+        //            for (int i = 0; i < directories.Length; i++)
+        //            {
+        //                if (DirectoryService.HasAccess(directories[i]))
+        //                {
+        //                    bool folderMatched = false;
+
+        //                    if ((pattern.Type & PatternType.Folder) != 0)
+        //                    {
+
+        //                        folderMatched = MathPattern(directories[i], pattern.IncludePattern, true);
+        //                    }
+
+        //                    if (folderMatched)
+        //                    {
+        //                        CleaningInformation_Pattern newPattern = new CleaningInformation_Pattern
+        //                        {
+        //                            Type = PatternType.All,
+        //                            IncludePattern = pattern.IncludePattern.ToList() ?? new List<string>(),
+        //                            ExcludePattern = pattern.ExcludePattern.ToList() ?? new List<string>(),
+        //                        };
+        //                        newPattern.IncludePattern.Remove(directories[i].ToString());
+
+
+        //                        size += GetSize(directories[i], recursive, newPattern);
+        //                    }
+
+
+        //                    if ((pattern.Type & (PatternType.File | PatternType.All)) != 0 && folderMatched)
+        //                    {
+        //                        size += GetSize(directories[i], recursive, pattern);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        catch
+        //        {
+
+        //        }
+
+        //    }
+        //    return size;
+        //}
+
+        private bool MathPattern(string path, List<string> patterns, bool IsFolder = false)
+        {
+            if (patterns.Count <= 0)
+            {
+                return false;
+            }
+
+            if (IsFolder)
+            {
+                string name = DirectoryService.GetName(path);
       
 
-        private bool MathPattern<T>(T path, CleaningInformation_Pattern pattern)
-        {
-            if (path != null)
-            {
-                string name = String.Empty;
-
-                if (path is FileInfo fileInfo)
+                foreach (string pattern in patterns)
                 {
-                    name = fileInfo.Name;
-                }
-                if (path is DirectoryInfo dirInfo)
-                {
-                    name = dirInfo.Name;
-                }
-
-                switch (pattern.Type)
-                {
-                    case PatternType.All:
+                    if (String.Equals(name, pattern, StringComparison.OrdinalIgnoreCase))
+                    {
                         return true;
+                    }
+                }
+            }
+            else
+            {
 
-                    case PatternType.File:
-                    case PatternType.Folder:
-                        return CheckPattern(name, pattern.IncludePattern);
+                string name = FileService.GetName(path);
 
-                    default:
+                foreach (string pattern in patterns)
+                {
+                    if (String.Equals(name, pattern, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    try
+                    {
+                        if (!_regexCache.TryGetValue(pattern, out var regex))
+                        {
+                            string regexPattern = "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
+                            regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                            _regexCache[pattern] = regex;
+                        }
+
+                        if (regex.IsMatch(name))
+                        {
+                            return true;
+                        }
+                    }
+                    catch
+                    {
                         return false;
+                    }
+
                 }
             }
             return false;
+
         }
+
+        //private bool MathPattern<T>(T path, CleaningInformation_Pattern pattern)
+        //{
+        //    if (path != null)
+        //    {
+        //        string name = String.Empty;
+
+        //        if (path is FileInfo fileInfo)
+        //        {
+        //            name = fileInfo.Name;
+        //        }
+        //        if (path is DirectoryInfo dirInfo)
+        //        {
+        //            name = dirInfo.Name;
+        //        }
+
+        //        switch (pattern.Type)
+        //        {
+        //            case PatternType.All:
+        //                return true;
+
+        //            case PatternType.File:
+        //            case PatternType.Folder:
+        //                return CheckPattern(name, pattern.IncludePattern);
+
+        //            default:
+        //                return false;
+        //        }
+        //    }
+        //    return false;
+        //}
         Stopwatch timer = new Stopwatch();
         private bool CheckPattern(string name, List<string> patterns)
         {
