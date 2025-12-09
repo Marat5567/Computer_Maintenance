@@ -65,6 +65,7 @@ namespace Computer_Maintenance.Presenters
                 }
                 catch (Exception ex)
                 {
+
                     ShowError($"Ошибка: {ex.Message}");
                 }
 

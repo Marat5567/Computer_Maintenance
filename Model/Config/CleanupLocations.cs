@@ -68,7 +68,7 @@ namespace Computer_Maintenance.Model.Config
                                 Pattern = new CleaningInformation_Pattern
                                 {
                                     Type = PatternType.All,
-                                    RecursiveDelete = false,
+                                    RecursiveDelete = true,
                                 },
                                 RecursiveSearch = false
                             }
