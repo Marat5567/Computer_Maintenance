@@ -134,99 +134,212 @@ namespace Computer_Maintenance.Controls
             }
             return selectedDrives;
         }
+        public void ShowCheckedDriveSafe(DriveInfo dInfo, List<CleaningInformation> cleaningInformation)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(new Action(() => ShowCheckedDrive(dInfo, ref cleaningInformation)));
+            else
+                ShowCheckedDrive(dInfo, ref cleaningInformation);
+        }
+
 
         //<summary>
         //Метод для вывода выбранных дисков
         //<summary>
         public void ShowCheckedDrive(DriveInfo dInfo, ref List<CleaningInformation> cleaningInformation)
         {
-            int optionCount = cleaningInformation.Count;
 
-            int rowCount = optionCount > 0 ? optionCount + 1 : 2;
+            if (flowLayoutPanelInfoDrives == null)
+                throw new InvalidOperationException("flowLayoutPanelInfoDrives не инициализирован");
 
-            TableLayoutPanel tablePanel = new TableLayoutPanel
+            if (dInfo == null) return;
+
+
+            cleaningInformation ??= new List<CleaningInformation>();
+
+            FlowLayoutPanel diskPanel = new FlowLayoutPanel
             {
+                FlowDirection = FlowDirection.TopDown,
+                AutoSize = true,
+                WrapContents = false,
                 BackColor = ApplicationSettings.BackgroundColor,
                 BorderStyle = BorderStyle.FixedSingle,
-                RowCount = rowCount,
-                ColumnCount = 1,
-                AutoSize = true,
+                Dock = DockStyle.Top,
+                Padding = new Padding(10),
             };
 
-            for (int r = 0; r < rowCount; r++)
+            // Суммарный размер
+            StorageSize totalSize = new StorageSize();
+            foreach (var cleanInfo in cleaningInformation)
             {
-                tablePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, r == 0 ? 35 : 25));
+                if (cleanInfo?.Size != null)
+                    totalSize.AddSize(cleanInfo.Size);
             }
 
             Label labelDiskName = new Label
             {
                 ForeColor = ApplicationSettings.TextColor,
-                Text = dInfo.DriveType == DriveType.Fixed ?
-                       $"Локальный диск ({dInfo.Name.Replace(":\\", ":")})" :
-                       dInfo.Name.Replace(":\\", ":"),
+                Text = dInfo.DriveType == DriveType.Fixed
+                    ? $"Локальный диск ({dInfo.Name.Replace(":\\", ":")})"
+                    : dInfo.Name.Replace(":\\", ":"),
+                Font = new Font(FontFamily.GenericSansSerif, 14, FontStyle.Bold),
+                Dock = DockStyle.Top,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill,
-                AutoSize = true
+                Margin = new Padding(0, 0, 0, 10),
+            };
+            diskPanel.Controls.Add(labelDiskName);
+
+            // Общий размер для очистки
+            FlowLayoutPanel totalSizePanel = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                WrapContents = false,
+                Margin = new Padding(0, 0, 0, 10),
+                BackColor = ApplicationSettings.BackgroundColor,
+                Font = new Font(FontFamily.GenericSansSerif, 10, FontStyle.Bold),
             };
 
-            tablePanel.Controls.Add(labelDiskName, 0, 0);
+            Label labelTextAvailableForClear = new Label
+            {
+                Text = "Доступно для очистки (всего) :",
+                AutoSize = true,
+                ForeColor = ApplicationSettings.TextColor
+            };
 
-            int rowIndex = 1;
+            Label availableForClear = new Label
+            {
+                Text = $"[ {totalSize.GetSizeByType(totalSize.GetMaxSizeType(), 2)} ]",
+                AutoSize = true,
+                ForeColor = totalSize.GetColorBySize(),
+            };
+
+            totalSizePanel.Controls.Add(labelTextAvailableForClear);
+            totalSizePanel.Controls.Add(availableForClear);
+            diskPanel.Controls.Add(totalSizePanel);
 
             if (cleaningInformation.Count == 0)
             {
-                tablePanel.Controls.Add(new Label
+                Label noOptions = new Label
                 {
                     Text = "Нет доступных опций очистки",
                     ForeColor = Color.Gray,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Fill,
-                    AutoSize = true
-                }, 0, 1);
+                    AutoSize = true,
+                    Margin = new Padding(20, 5, 5, 5)
+                };
+                diskPanel.Controls.Add(noOptions);
             }
             else
             {
                 foreach (CleaningInformation cleanInfo in cleaningInformation)
                 {
-                    // Основная панель для строки
-                    Panel container = new Panel
+                    if (cleanInfo == null) continue;
+
+                    FlowLayoutPanel optionPanel = new FlowLayoutPanel
                     {
-                        BackColor = ApplicationSettings.BackgroundColor,
-                        Dock = DockStyle.Fill,
+                        FlowDirection = FlowDirection.TopDown,
                         AutoSize = true,
-                        Margin = new Padding(10, 0, 0, 0)
+                        WrapContents = false,
+                        Margin = new Padding(5, 0, 0, 0),
+                        BackColor = ApplicationSettings.BackgroundColor,
                     };
 
-                    // CheckBox
-                    CheckBox checkBox = new CheckBox
+                    CheckBox mainCheckBox = new CheckBox
                     {
                         Text = cleanInfo.SectionName,
-                        ForeColor = ApplicationSettings.TextColor,
                         AutoSize = true,
-                        Location = new Point(0, 0),
+                        BackColor = ApplicationSettings.BackgroundColor,
+                        ForeColor = ApplicationSettings.TextColor,
                         Tag = cleanInfo
                     };
 
-                    // Label с цветным текстом
                     Label sizeLabel = new Label
                     {
-                        Text = $"  [{cleanInfo.Size.GetSizeByType(cleanInfo.Size.GetMaxSizeType(), 1)}]",
-                        ForeColor = cleanInfo.Size.GetColorBySize(),
+                        Text = $"[{cleanInfo.Size.GetSizeByType(cleanInfo.Size.GetMaxSizeType(), 1) ?? "0"}]",
                         AutoSize = true,
+                        ForeColor = cleanInfo.Size.GetColorBySize(),
+                        Margin = new Padding(0, 4, 0, 0)
                     };
 
-                    container.Controls.Add(checkBox);
-                    container.Controls.Add(sizeLabel);
-                    sizeLabel.Location = new Point(checkBox.Width, 0);
+                    FlowLayoutPanel subItemsContainer = new FlowLayoutPanel
+                    {
+                        FlowDirection = FlowDirection.TopDown,
+                        AutoSize = true,
+                        WrapContents = false,
+                        Visible = false,
+                        Margin = new Padding(25, 0, 0, 5),
+                        BackColor = ApplicationSettings.BackgroundColor,
+                        Padding = new Padding(0, 5, 0, 0)
+                    };
 
-                    tablePanel.Controls.Add(container, 0, rowIndex);
+                    if (cleanInfo.SubItems != null)
+                    {
+                        foreach (var sub in cleanInfo.SubItems)
+                        {
+                            if (sub == null || cleanInfo.OnlyOnePoint)
+                                continue;
 
-                    rowIndex++;
+                            FlowLayoutPanel subItemPanel = new FlowLayoutPanel
+                            {
+                                FlowDirection = FlowDirection.LeftToRight,
+                                AutoSize = true,
+                                WrapContents = false,
+                                Margin = new Padding(0, 0, 0, 2),
+                                BackColor = ApplicationSettings.BackgroundColor
+                            };
+
+                            CheckBox subCheckBox = new CheckBox
+                            {
+                                Text = sub.SectionName,
+                                AutoSize = true,
+                                BackColor = ApplicationSettings.BackgroundColor,
+                                ForeColor = ApplicationSettings.TextColor,
+                                Margin = new Padding(0, 2, 5, 0),
+                                Tag = sub
+                            };
+
+                            Label subSizeLabel = new Label
+                            {
+                                Text = $"[{sub.Size.GetSizeByType(sub.Size.GetMaxSizeType(), 1) ?? "0"}]",
+                                AutoSize = true,
+                                ForeColor = sub.Size.GetColorBySize(),
+                                Margin = new Padding(0, 4, 0, 0),
+                                Font = new Font(subCheckBox.Font, FontStyle.Bold)
+                            };
+
+                            subItemPanel.Controls.Add(subCheckBox);
+                            subItemPanel.Controls.Add(subSizeLabel);
+                            subItemsContainer.Controls.Add(subItemPanel);
+                        }
+                    }
+
+                    mainCheckBox.CheckedChanged += (s, e) =>
+                    {
+                        if (!cleanInfo.OnlyOnePoint)
+                            subItemsContainer.Visible = mainCheckBox.Checked;
+                    };
+
+                    FlowLayoutPanel headerPanel = new FlowLayoutPanel
+                    {
+                        BackColor = ApplicationSettings.BackgroundColor,
+                        FlowDirection = FlowDirection.LeftToRight,
+                        AutoSize = true,
+                        WrapContents = false
+                    };
+                    headerPanel.Controls.Add(mainCheckBox);
+                    headerPanel.Controls.Add(sizeLabel);
+
+                    optionPanel.Controls.Add(headerPanel);
+                    optionPanel.Controls.Add(subItemsContainer);
+                    diskPanel.Controls.Add(optionPanel);
                 }
             }
 
-            flowLayoutPanelInfoDrives.Controls.Add(tablePanel);
+            flowLayoutPanelInfoDrives.Controls.Add(diskPanel);
+            flowLayoutPanelInfoDrives.PerformLayout();
         }
+
+
 
         //<summary>
         //Метод для получения выбранных опций
@@ -253,6 +366,7 @@ namespace Computer_Maintenance.Controls
 
             return selectedOptions;
         }
+
 
         ///<summary>
         ///Метод для очистки панели выбранных дисков

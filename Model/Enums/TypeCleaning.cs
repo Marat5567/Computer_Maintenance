@@ -10,6 +10,8 @@
         CrashDumps, //Дампы ошибок приложений
         D3DSCache, //Временные файлы DirectX
         WindowsErrorReporting, //Отчеты об ошибках Windows
-        UWPTempFiles //хранилище UWP-приложений
+        UWPTempFiles, //хранилище UWP-приложений
+        WindowsUpdateCache, //Кэш центра обновления Windows
+        WindowsUpdateLogs, //Логи центра обновления Windows
     }
 }

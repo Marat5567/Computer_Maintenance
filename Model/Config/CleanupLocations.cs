@@ -1,21 +1,24 @@
 ﻿using Computer_Maintenance.Model.Enums;
+using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
-using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
 namespace Computer_Maintenance.Model.Config
 {
     public static class CleanupLocations
     {
+
+        private readonly static string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        private readonly static string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         ///summary>
         ///Метод для получения информации о чистки по доступу
         ///<summary>
-        public static List<CleaningInformation> GetLocationsByAccess(DriveInfo dInfo, string systemDrive)
+        public static List<CleaningInformation> GetLocationsByDriveType(DriveInfo dInfo, string systemDrive)
         {
             List <CleaningInformation> locations = new List<CleaningInformation>();
             switch (dInfo.DriveType)
             {
                 case DriveType.Fixed:
-                 locations.AddRange(GetLocationFor_Fixed(dInfo, systemDrive));
+                 locations.AddRange(GetLocationsFor_FixedDrive(dInfo, systemDrive));
                     break;
                 case DriveType.Removable:
                     break;
@@ -23,34 +26,189 @@ namespace Computer_Maintenance.Model.Config
             return locations;
         }
 
-
-        ///<summary>
-        ///Метод для получения информации о чистки для user
-        ///<summary>
-        private static List<CleaningInformation> GetLocationFor_Fixed(DriveInfo dInfo, string systemDrive)
+        private static List<CleaningInformation> GetBrowserCaches(DriveInfo dInfo)
         {
-            List<CleaningInformation> locations = new List<CleaningInformation>();
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-            foreach ((string BrowserName, string CachePath) browser in GetInstalledBrowserCaches(dInfo))
+            List<CleaningInformation> locations = new();
+            List<string> browsers = GetInstalledBrowserCaches(dInfo);
+
+            foreach (string browser in browsers)
             {
-                locations.Add(
-                    new CleaningInformation
+                if (browser == "Mozilla Firefox")
+                {
+                    // Firefox: ищем профиль
+                    string firefoxProfiles = Path.Combine(appData, "Mozilla", "Firefox", "Profiles");
+                    foreach (string profileDir in DirectoryService.GetDirectories(firefoxProfiles))
                     {
-                        TypeCleaning = TypeCleaning.UserBrowserCache,
-                        SectionName = $"Кэш {browser.BrowserName}",
-                        Path = browser.CachePath,
-                        Pattern = new CleaningInformation_Pattern
-                        {
-                            Type = PatternType.All,
-                            RecursiveDelete = true,
-                        },
-                        RecursiveSearch = false
-                    }
-                );
-            }
+                        string cache2 = Path.Combine(profileDir, "cache2");
+                        if (!DirectoryService.Exists(cache2))
+                            continue;
 
+                        locations.Add(new CleaningInformation
+                        {
+                            SectionName = browser,
+                            SubItems = new List<SubCleaningInformation>
+                            {
+                                new SubCleaningInformation
+                                {
+                                    TypeCleaning = TypeCleaning.UserBrowserCache,
+                                    SectionName = "cache2",
+                                    Path = cache2,
+                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                                    RecursiveSearch = true
+                                },
+                                new SubCleaningInformation
+                                {
+                                    TypeCleaning = TypeCleaning.UserBrowserCache,
+                                    SectionName = "cache2/entries",
+                                    Path = Path.Combine(cache2, "entries"),
+                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                                    RecursiveSearch = false
+                                },
+                                new SubCleaningInformation
+                                {
+                                    TypeCleaning = TypeCleaning.UserBrowserCache,
+                                    SectionName = "cache2/doomed",
+                                    Path = Path.Combine(cache2, "doomed"),
+                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                                    RecursiveSearch = false
+                                },
+                                new SubCleaningInformation
+                                {
+                                    TypeCleaning = TypeCleaning.UserBrowserCache,
+                                    SectionName = "thumbnails",
+                                    Path = Path.Combine(profileDir, "thumbnails"),
+                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                                    RecursiveSearch = false
+                                },
+                                new SubCleaningInformation
+                                {
+                                    TypeCleaning = TypeCleaning.UserBrowserCache,
+                                    SectionName = "jumpListCache",
+                                    Path = Path.Combine(profileDir, "jumpListCache"),
+                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                                    RecursiveSearch = false
+                                },
+                                new SubCleaningInformation
+                                {
+                                    TypeCleaning = TypeCleaning.UserBrowserCache,
+                                    SectionName = "startupCache",
+                                    Path = Path.Combine(profileDir, "startupCache"),
+                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                                    RecursiveSearch = false
+                                }
+                            }
+                        });
+                    }
+
+                    continue;
+                }
+
+                string basePath = null;
+
+                if (browser == "Google Chrome")
+                {
+                    basePath = Path.Combine(
+                        localAppData,
+                        "Google",
+                        "Chrome",
+                        "User Data",
+                        "Default");
+                }
+                else if (browser == "Yandex Browser")
+                {
+                    basePath = Path.Combine(
+                        localAppData,
+                        "Yandex",
+                        "YandexBrowser",
+                        "User Data",
+                        "Default");
+                }
+                else if (browser == "Microsoft Edge")
+                {
+                    basePath = Path.Combine(
+                        localAppData,
+                        "Microsoft",
+                        "Edge",
+                        "User Data",
+                        "Default");
+                }
+                else
+                {
+                    basePath = null;
+                }
+                if (basePath == null)
+                    continue;
+
+
+                locations.Add(new CleaningInformation
+                {
+                    SectionName = browser,
+                    SubItems = new List<SubCleaningInformation>
+                    {
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.UserBrowserCache,
+                            SectionName = "Основной кэш браузера",
+                            Path = Path.Combine(basePath, "Cache"),
+                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                            RecursiveSearch = false
+                        },
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.UserBrowserCache,
+                            SectionName = "Кэш скомпилированного кода (JS/WASM)",
+                            Path = Path.Combine(basePath, "Code Cache"),
+                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                            RecursiveSearch = false
+                        },
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.UserBrowserCache,
+                            SectionName = "Кэш графического ускорителя (GPUCache)",
+                            Path = Path.Combine(basePath, "GPUCache"),
+                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                            RecursiveSearch = false
+                        },
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.UserBrowserCache,
+                            SectionName = "Кэш сервис-воркеров (офлайн-данные сайтов)",
+                            Path = Path.Combine(basePath, "Service Worker", "CacheStorage"),
+                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                            RecursiveSearch = false,
+                        },
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.UserBrowserCache,
+                            SectionName = "Файлы восстановления сессии",
+                            Path = Path.Combine(basePath, "Sessions"),
+                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                            RecursiveSearch = false
+                        },
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.UserBrowserCache,
+                            SectionName = "Временные данные расширений",
+                            Path = Path.Combine(basePath, "Storage", "ext"),
+                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
+                            RecursiveSearch = false
+                        }
+
+                    }
+                });
+            }
+            return locations;
+        }
+
+
+
+        private static CleaningInformation GetRecycleBin(DriveInfo dInfo)
+        {
             string recycleBinPath = GetRecycleBinPath(dInfo);
-            if (Directory.Exists(recycleBinPath))
+            if (DirectoryService.Exists(recycleBinPath))
             {
                 // Корзина текущего пользователя (только его файлы)
                 string userSid = WindowsIdentity.GetCurrent().User?.Value ?? "";
@@ -59,38 +217,46 @@ namespace Computer_Maintenance.Model.Config
                     string userRecyclePath = Path.Combine(recycleBinPath, userSid);
                     if (Directory.Exists(userRecyclePath))
                     {
-                        locations.Add(
-                            new CleaningInformation
+                        return new CleaningInformation
+                        {
+                            OnlyOnePoint = true,
+                            SectionName = $"Корзина ({dInfo.Name.Replace("\\", "")}) - мои файлы",
+                            SubItems = new List<SubCleaningInformation>
                             {
-                                TypeCleaning = TypeCleaning.UserRecycleBin,
-                                SectionName = $"Корзина ({dInfo.Name.Replace("\\", "")}) - мои файлы",
-                                Path = userRecyclePath,
-                                Pattern = new CleaningInformation_Pattern
+                                new SubCleaningInformation
                                 {
-                                    Type = PatternType.All,
-                                    RecursiveDelete = true,
+                                    TypeCleaning = TypeCleaning.UserRecycleBin,
+                                    Path = userRecyclePath,
+                                    Pattern = new CleaningInformation_Pattern
+                                    {
+                                        Type = PatternType.All,
+                                        RecursiveDelete = true,
+                                    },
+                                    RecursiveSearch = false,
                                 },
-                                RecursiveSearch = false
                             }
-                        );
+
+                        };
                     }
                 }
             }
+            return null;
+        }
 
-
-            if (string.Equals(dInfo.Name, systemDrive, StringComparison.OrdinalIgnoreCase))
+        private static CleaningInformation GetUserTemp()
+        {
+            string tempPath = Path.GetTempPath();
+            if (DirectoryService.Exists(tempPath))
             {
-                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-
-                string tempPath = Path.GetTempPath();
-                if (Directory.Exists(tempPath))
+                return new CleaningInformation
                 {
-                    locations.Add(
-                        new CleaningInformation
+                    SectionName = "Временные файлы текущего пользователя",
+                    OnlyOnePoint = true,
+                    SubItems = new List<SubCleaningInformation>
+                    {
+                        new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UserTemp,
-                            SectionName = "Временные файлы текущего пользователя",
                             Path = tempPath,
                             Pattern = new CleaningInformation_Pattern
                             {
@@ -99,15 +265,27 @@ namespace Computer_Maintenance.Model.Config
                             },
                             RecursiveSearch = false
                         }
-                    );
-                }
+                    }
+                };
+            }
+            return null;
+        }
 
+        private static CleaningInformation GetWindowsCache()
+        {
+            string thumbnailCachePath = Path.Combine(localAppData, "Microsoft", "Windows", "Explorer");
+            string D3DSCache = Path.Combine(localAppData, "D3DSCache");
+            string updateCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download");
+            string dataStoreLogs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "DataStore", "Logs");
 
-                string thumbnailCachePath = Path.Combine(localAppData, "Microsoft", "Windows", "Explorer");
-                if (Directory.Exists(thumbnailCachePath))
+            if (Directory.Exists(thumbnailCachePath))
+            {
+                return new CleaningInformation
                 {
-                    locations.Add(
-                        new CleaningInformation
+                    SectionName = "Кэш создаваемой Windows",
+                    SubItems = new List<SubCleaningInformation>
+                    {
+                        new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.ThumbnailCache,
                             SectionName = "Кэш эскизов изображений",
@@ -123,38 +301,11 @@ namespace Computer_Maintenance.Model.Config
                                 RecursiveDelete = true,
                             },
                             RecursiveSearch = true
-                        }
-                    );
-                }
-
-                string crashDumpsPath = Path.Combine(localAppData, "CrashDumps");
-                if (Directory.Exists(crashDumpsPath))
-                {
-                    locations.Add(
-                        new CleaningInformation
-                        {
-                            TypeCleaning = TypeCleaning.CrashDumps,
-                            SectionName = "Дампы ошибок приложений",
-                            Path = crashDumpsPath,
-                            Pattern = new 
-                            CleaningInformation_Pattern 
-                            { 
-                                Type = PatternType.All,
-                                RecursiveDelete = false,
-                            },
-                            RecursiveSearch = false
-                        }
-                    );
-                }
-
-                string D3DSCache = Path.Combine(localAppData, "D3DSCache");
-                if (Directory.Exists(D3DSCache))
-                {
-                    locations.Add(
-                        new CleaningInformation
+                        },
+                        new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.D3DSCache,
-                            SectionName = "Временные файлы DirectX",
+                            SectionName = "Кэш DirectX",
                             Path = D3DSCache,
                             Pattern = new
                             CleaningInformation_Pattern
@@ -163,25 +314,57 @@ namespace Computer_Maintenance.Model.Config
                                 RecursiveDelete = true,
                             },
                             RecursiveSearch = false
-                        }
-                    );
-                }
-
-                string WindowsErrorReporting = Path.Combine(localAppData, "Microsoft", "Windows", "WER");
-                if (Directory.Exists(WindowsErrorReporting))
-                {
-                    locations.Add(
-                        new CleaningInformation
+                        },
+                        new SubCleaningInformation
                         {
-                            TypeCleaning = TypeCleaning.WindowsErrorReporting,
-                            SectionName = "Отчеты об ошибках Windows",
-                            Path = WindowsErrorReporting,
+                            TypeCleaning = TypeCleaning.WindowsUpdateCache,
+                            SectionName = "Кэш центра обновления Windows",
+                            Path = updateCache,
                             Pattern = new CleaningInformation_Pattern
                             {
+                                Type = PatternType.All,
+                                RecursiveDelete = true
+                            },
+                        },
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.WindowsUpdateLogs,
+                            SectionName = "Логи центра обновления Windows",
+                            Path = dataStoreLogs,
+                            Pattern = new CleaningInformation_Pattern
+                            {
+                                Type = PatternType.All,
+                                RecursiveDelete = true
+                            },
+                            RecursiveSearch = false
+                        }
+                    }
+                };
+            }
+            return null;
+        }
+
+        private static CleaningInformation GetWindowsErrorReporting()
+        {
+            string WindowsErrorReporting = Path.Combine(localAppData, "Microsoft", "Windows", "WER");
+
+            if (Directory.Exists(WindowsErrorReporting))
+            {
+                return new CleaningInformation
+                {
+                    SectionName = "Отчеты об ошибках Windows",
+                    OnlyOnePoint = true,
+                    SubItems = new List<SubCleaningInformation>
+                    {
+                        new SubCleaningInformation
+                        {
+                            TypeCleaning = TypeCleaning.WindowsErrorReporting,
+                            Path = WindowsErrorReporting,
+                            Pattern = new CleaningInformation_Pattern{
                                 Type = PatternType.Folder,
                                 IncludePattern = new List<string>()
                                 {
-                                    "ReportArchive", 
+                                    "ReportArchive",
                                     "ReportQueue",
                                     "Temp"
                                 },
@@ -189,14 +372,23 @@ namespace Computer_Maintenance.Model.Config
                             },
                             RecursiveSearch = true,
                         }
-                    );
-                }
-
-                string packagesPath = Path.Combine(localAppData, "Packages");
-                if (Directory.Exists(packagesPath))
+                    }
+                };
+            }
+            return null;
+        }
+            
+        private static CleaningInformation GetWindowsTemp()
+        {
+            string packagesPath = Path.Combine(localAppData, "Packages");
+            if (DirectoryService.Exists(packagesPath))
+            {
+                return new CleaningInformation
                 {
-                    locations.Add(
-                        new CleaningInformation
+                    SectionName = "Временные файлы создаваемой Windows",
+                    SubItems = new List<SubCleaningInformation>
+                    {
+                        new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UWPTempFiles,
                             SectionName = "Временные файлы приложений Microsoft Store",
@@ -206,72 +398,121 @@ namespace Computer_Maintenance.Model.Config
                                 Type = PatternType.Folder,
                                 IncludePattern = new List<string>()
                                 {
-                                    "Temp", 
+                                    "Temp",
                                     "TempState"
                                 },
                                 RecursiveDelete = true,
                             },
                             RecursiveSearch = true
                         }
-                    );
-                }
+                    }
+                };
             }
+            return null;
+        }
 
+        private static CleaningInformation GetApllicationsCrashDump()
+        {
+            string crashDumpsPath = Path.Combine(localAppData, "CrashDumps");
+            if (Directory.Exists(crashDumpsPath))
+            {
+                return new CleaningInformation
+                {
+                    SectionName = "Дампы ошибок приложений",
+                    OnlyOnePoint = true,
+                    SubItems = new List<SubCleaningInformation>
+                    {
+                        new SubCleaningInformation
+                        {
+                             TypeCleaning = TypeCleaning.CrashDumps,
+                             Path = crashDumpsPath,
+                             Pattern = new
+                             CleaningInformation_Pattern
+                             {
+                                 Type = PatternType.All,
+                                 RecursiveDelete = false,
+                             },
+                             RecursiveSearch = false
+                        }
+                    }
+                };
+            }
+            return null;
+        }
+        
+
+        ///<summary>
+        ///Метод для получения информации о чистки
+        ///<summary>
+        private static List<CleaningInformation> GetLocationsFor_FixedDrive(DriveInfo dInfo, string systemDrive)
+        {
+            List<CleaningInformation> locations = new List<CleaningInformation>();
+
+            if (string.Equals(dInfo.Name, systemDrive, StringComparison.OrdinalIgnoreCase))
+            {
+                locations.AddRange(GetBrowserCaches(dInfo));
+                locations.Add(GetRecycleBin(dInfo));
+                locations.Add(GetUserTemp());
+                locations.Add(GetWindowsCache());
+                locations.Add(GetWindowsTemp());
+                locations.Add(GetWindowsErrorReporting());
+                locations.Add(GetApllicationsCrashDump());
+            }
             return locations;
         }
+
 
         ///<summary>
         ///Метод для получения информации о пути кэша браузеров
         ///<summary>
 
-        public static List<(string BrowserName, string CachePath)> GetInstalledBrowserCaches(DriveInfo dInfo)
+        private static List<string> GetInstalledBrowserCaches(DriveInfo dInfo)
         {
-            string profileDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))!;
-            
-            // Если диск не тот, где находится профиль — браузеров там быть не может
+            string profileDrive = Path.GetPathRoot(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))!;
+
+            // На другом диске браузеров нет
             if (!string.Equals(dInfo.Name, profileDrive, StringComparison.OrdinalIgnoreCase))
-            {
-                return new List<(string, string)>();
-            }
+                return new List<string>();
 
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-            List<(string BrowserName, string CachePath)> caches = new List<(string, string)>();
+            List<string> caches = new();
 
+            // Chrome
             string chromePath = Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Cache");
-            if (Directory.Exists(chromePath))
-            {
-                caches.Add(("Google Chrome", chromePath));
-            }
+            if (DirectoryService.Exists(chromePath))
+                caches.Add("Google Chrome");
 
+            // Yandex
             string yandexPath = Path.Combine(localAppData, "Yandex", "YandexBrowser", "User Data", "Default", "Cache");
-            if (Directory.Exists(yandexPath))
-            {
-                caches.Add(("Yandex Browser", yandexPath));
-            }
+            if (DirectoryService.Exists(yandexPath))
+                caches.Add("Yandex Browser");
 
+            // Edge
             string edgePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Cache");
-            if (Directory.Exists(edgePath))
-            {
-                caches.Add(("Microsoft Edge", edgePath));
-            }
+            if (DirectoryService.Exists(edgePath))
+                caches.Add("Microsoft Edge");
 
+            // Firefox (несколько профилей → достаточно наличия хотя бы одного)
             string firefoxProfilesPath = Path.Combine(appData, "Mozilla", "Firefox", "Profiles");
-            if (Directory.Exists(firefoxProfilesPath))
+            if (DirectoryService.Exists(firefoxProfilesPath))
             {
-                foreach (var profileDir in Directory.GetDirectories(firefoxProfilesPath))
+                foreach (var profileDir in DirectoryService.GetDirectories(firefoxProfilesPath))
                 {
                     string cacheDir = Path.Combine(profileDir, "cache2");
-                    if (Directory.Exists(cacheDir))
+                    if (DirectoryService.Exists(cacheDir))
                     {
-                        caches.Add(("Mozilla Firefox", cacheDir));
+                        caches.Add("Mozilla Firefox");
+                        break;
                     }
                 }
             }
 
             return caches;
         }
+
 
 
         ///<summary>

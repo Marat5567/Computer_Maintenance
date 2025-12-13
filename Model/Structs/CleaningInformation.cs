@@ -13,11 +13,19 @@ namespace Computer_Maintenance.Model.Structs
         //public AccessLevel RequiredAccess { get; set; } //Права доступа
         //public bool Recursive { get; set; } //Очищать рекурсивно
 
-        public string SectionName { get; set; } // Имя раздела
+        public string SectionName { get; set; } // Имя основного раздела
+        public bool OnlyOnePoint { get; set; } = false;//Только 1 пункт
+        public List<SubCleaningInformation> SubItems {get;set;} //Вложенные разделы основного имени раздела
+        public StorageSize Size { get; set; } //Размер раздела
+    }
+
+    public class SubCleaningInformation
+    {
+        public string SectionName { get; set; } // Имя основного раздела
         public string Path { get; set; } // Основной путь
         public bool RecursiveSearch { get; set; } //Очищать рекурсивно
         public TypeCleaning TypeCleaning { get; set; } // Тип очистки для выбора метода очистки
-        public CleaningInformation_Pattern Pattern {get;set;} // Паттерны
+        public CleaningInformation_Pattern Pattern { get; set; } // Паттерны
         public StorageSize Size { get; set; } //Размер раздела
     }
 }

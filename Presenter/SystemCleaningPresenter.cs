@@ -33,21 +33,26 @@ namespace Computer_Maintenance.Presenters
 
         private async void OnStartScan(object sender, EventArgs e)
         {
-            _view.ClearCheckedDrives();
-            _selectedDrives = _view.GetSelectedDrives();
+            if (_view == null)
+                throw new InvalidOperationException("_view не инициализирован");
 
-            if (_selectedDrives.Count <= 0)
+            _view.ClearCheckedDrives();
+            _selectedDrives = _view.GetSelectedDrives() ?? new List<DriveInfo>();
+
+            if (_selectedDrives.Count == 0)
             {
                 _view.ClearCheckedDrives();
-
-                ShowInfo("Выберите хотя-бы один диск");
+                ShowInfo("Выберите хотя бы один диск");
                 return;
             }
 
             foreach (DriveInfo dInfo in _selectedDrives)
             {
-                List<CleaningInformation> cleaningInformation = _model.GetLocationsByAccessForDrive(dInfo);
+                if (dInfo == null) continue;
 
+                List<CleaningInformation> cleaningInformation = _model?.GetLocationsByAccessForDrive(dInfo) ?? new List<CleaningInformation>();
+
+                object lockObject = new object();
                 List<Task> tasks = new List<Task>();
 
                 for (int i = 0; i < cleaningInformation.Count; i++)
@@ -55,7 +60,26 @@ namespace Computer_Maintenance.Presenters
                     int index = i;
                     tasks.Add(Task.Run(() =>
                     {
-                        cleaningInformation[index].Size = _model.GetSizeSection(cleaningInformation[index]);
+                        var cleaningInfo = cleaningInformation[index];
+                        if (cleaningInfo == null) return;
+
+                        var localSubItems = cleaningInfo.SubItems?.ToList() ?? new List<SubCleaningInformation>();
+
+                        StorageSize totalSize = new StorageSize();
+
+                        foreach (var subCleaningInformation in localSubItems)
+                        {
+                            if (subCleaningInformation == null) continue;
+
+                            StorageSize size = _model.GetSizeSection(subCleaningInformation);
+                            subCleaningInformation.Size = size;
+                            totalSize.AddSize(size);
+                        }
+
+                        lock (lockObject)
+                        {
+                            cleaningInfo.Size = totalSize;
+                        }
                     }));
                 }
 
@@ -65,14 +89,14 @@ namespace Computer_Maintenance.Presenters
                 }
                 catch (Exception ex)
                 {
-
                     ShowError($"Ошибка: {ex.Message}");
                 }
 
-
-                _view.ShowCheckedDrive(dInfo, ref cleaningInformation);
+                _view.ShowCheckedDriveSafe(dInfo, cleaningInformation);
+                // Потокобезопасное обновление UI
             }
         }
+
 
         public void OnStartClean(object sender, EventArgs e)
         {

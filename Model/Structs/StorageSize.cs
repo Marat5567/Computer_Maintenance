@@ -12,6 +12,15 @@ namespace Computer_Maintenance.Model.Structs
 
         public enum SizeType { Byte, KB, MB, GB, TB }
 
+        public void AddSize(StorageSize newSize)
+        {
+            TB += newSize.TB;
+            GB += newSize.GB;
+            MB += newSize.MB;
+            KB += newSize.KB;
+            Byte += newSize.Byte;
+        }
+
         public Color GetColorBySize()
         {
             if (TB >= 1)
@@ -84,100 +93,26 @@ namespace Computer_Maintenance.Model.Structs
             switch (type)
             {
                 case SizeType.TB:
-                    if (n1 != 0)
-                    {
-                        if (GB.ToString().Length >= 1)
-                        {
-                            return $"{TB}, {GB.ToString()[0]} ТБ";
-                        }
-                    }
-                    if (n2 != 0)
-                    {
-                        if (GB.ToString().Length >= 2)
-                        {
-                            return $"{TB}, {GB.ToString()[1]} ТБ";
-                        }
-                    }
-                    if (n3 != 0)
-                    {
-                        if (GB.ToString().Length >= 3)
-                        {
-                            return $"{TB}, {GB.ToString()[2]} ТБ";
-                        }
-                    }
-                    break;
-                case SizeType.GB:
-                    if (n1 != 0)
-                    {
-                        if (MB.ToString().Length >= 1)
-                        {
-                            return $"{GB}, {MB.ToString()[0]} ГБ";
-                        }
-                    }
-                    if (n2 != 0)
-                    {
-                        if (MB.ToString().Length >= 2)
-                        {
-                            return $"{GB}, {MB.ToString()[1]} ГБ";
-                        }
-                    }
-                    if (n3 != 0)
-                    {
-                        if (MB.ToString().Length >= 3)
-                        {
-                            return $"{GB}, {MB.ToString()[2]} ГБ";
-                        }
-                    }
-                    break;
-                case SizeType.MB:
-                    if (n1 != 0)
-                    {
-                        if (KB.ToString().Length >= 1)
-                        {
-                            return $"{MB}, {KB.ToString()[0]} МБ";
-                        }
-                    }
-                    if (n2 != 0)
-                    {
-                        if (KB.ToString().Length >= 2)
-                        {
-                            return $"{MB}, {KB.ToString()[1]} МБ";
-                        }
-                    }
-                    if (n3 != 0)
-                    {
-                        if (KB.ToString().Length >= 3)
-                        {
-                            return $"{MB}, {KB.ToString()[2]} МБ";
-                        }
-                    }
-                    break;
-                case SizeType.KB:
-                    if (n1 != 0)
-                    {
-                        if (Byte.ToString().Length >= 1)
-                        {
-                            return $"{KB}, {Byte.ToString()[0]} КБ";
-                        }
-                    }
-                    if (n2 != 0)
-                    {
-                        if (Byte.ToString().Length >= 2)
-                        {
-                            return $"{KB}, {Byte.ToString()[1]} КБ";
-                        }
-                    }
-                    if (n3 != 0)
-                    {
-                        if (Byte.ToString().Length >= 3)
-                        {
-                            return $"{KB}, {Byte.ToString()[2]} КБ";
-                        }
-                    }
-                    break;
-            }
-            return $"{Byte} Б";
+                    double totalTB = TB + (GB / 1024.0) + (MB / (1024.0 * 1024.0)) + (KB / (1024.0 * 1024.0 * 1024.0)) + (Byte / (1024.0 * 1024.0 * 1024.0 * 1024.0));
+                    return $"{totalTB:F2} ТБ";
 
+                case SizeType.GB:
+                    double totalGB = GB + (MB / 1024.0) + (KB / (1024.0 * 1024.0)) + (Byte / (1024.0 * 1024.0 * 1024.0));
+                    return $"{totalGB:F2} ГБ";
+
+                case SizeType.MB:
+                    double totalMB = MB + (KB / 1024.0) + (Byte / (1024.0 * 1024.0));
+                    return $"{totalMB:F2} МБ";
+
+                case SizeType.KB:
+                    double totalKB = KB + (Byte / 1024.0);
+                    return $"{totalKB:F2} КБ";
+
+                case SizeType.Byte:
+                    return $"{Byte} Б";
+            }
+
+            return "0 Б";
         }
     }
 }
