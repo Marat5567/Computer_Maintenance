@@ -1,7 +1,7 @@
 ﻿using Computer_Maintenance.Model.Enums;
-using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
 using System.Security.Principal;
+using static Computer_Maintenance.Model.Enums.FilesAndDirectories;
 namespace Computer_Maintenance.Model.Config
 {
     public static class CleanupLocations
@@ -40,69 +40,138 @@ namespace Computer_Maintenance.Model.Config
                 {
                     // Firefox: ищем профиль
                     string firefoxProfiles = Path.Combine(appData, "Mozilla", "Firefox", "Profiles");
-                    foreach (string profileDir in DirectoryService.GetDirectories(firefoxProfiles))
+                    if (Directory.Exists(firefoxProfiles))
                     {
-                        string cache2 = Path.Combine(profileDir, "cache2");
-                        if (!DirectoryService.Exists(cache2))
-                            continue;
-
-                        locations.Add(new CleaningInformation
+                        foreach (string profileDir in Directory.GetDirectories(firefoxProfiles))
                         {
-                            SectionName = browser,
-                            SubItems = new List<SubCleaningInformation>
-                            {
-                                new SubCleaningInformation
-                                {
-                                    TypeCleaning = TypeCleaning.UserBrowserCache,
-                                    SectionName = "cache2",
-                                    Path = cache2,
-                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                                    RecursiveSearch = true
-                                },
-                                new SubCleaningInformation
-                                {
-                                    TypeCleaning = TypeCleaning.UserBrowserCache,
-                                    SectionName = "cache2/entries",
-                                    Path = Path.Combine(cache2, "entries"),
-                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                                    RecursiveSearch = false
-                                },
-                                new SubCleaningInformation
-                                {
-                                    TypeCleaning = TypeCleaning.UserBrowserCache,
-                                    SectionName = "cache2/doomed",
-                                    Path = Path.Combine(cache2, "doomed"),
-                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                                    RecursiveSearch = false
-                                },
-                                new SubCleaningInformation
-                                {
-                                    TypeCleaning = TypeCleaning.UserBrowserCache,
-                                    SectionName = "thumbnails",
-                                    Path = Path.Combine(profileDir, "thumbnails"),
-                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                                    RecursiveSearch = false
-                                },
-                                new SubCleaningInformation
-                                {
-                                    TypeCleaning = TypeCleaning.UserBrowserCache,
-                                    SectionName = "jumpListCache",
-                                    Path = Path.Combine(profileDir, "jumpListCache"),
-                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                                    RecursiveSearch = false
-                                },
-                                new SubCleaningInformation
-                                {
-                                    TypeCleaning = TypeCleaning.UserBrowserCache,
-                                    SectionName = "startupCache",
-                                    Path = Path.Combine(profileDir, "startupCache"),
-                                    Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                                    RecursiveSearch = false
-                                }
-                            }
-                        });
-                    }
+                            string cache2 = Path.Combine(profileDir, "cache2");
+                            if (!Directory.Exists(cache2))
+                                continue;
 
+                            locations.Add(new CleaningInformation
+                            {
+                                SectionName = browser,
+                                IsSingleItem = false,
+                                SubItems = new List<SubCleaningInformation>
+                                {
+                                    new SubCleaningInformation
+                                    {
+                                        SectionName = "cache2",
+                                        TypeCleaning = TypeCleaning.UserBrowserCache,
+                                        SearchConfig = new SearchConfiguration
+                                        {
+                                            BasePath = cache2,
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.OnlyFiles,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false
+                                                }
+                                            }
+                                        },
+                                    },
+                                    new SubCleaningInformation
+                                    {
+                                        SectionName = "cache2/entries",
+                                        TypeCleaning = TypeCleaning.UserBrowserCache,
+                                        SearchConfig = new SearchConfiguration
+                                        {
+                                            BasePath = Path.Combine(cache2, "entries"),
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.OnlyFiles,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false
+                                                }
+                                            }
+                                        },
+                                    },
+                                    new SubCleaningInformation
+                                    {
+                                        SectionName = "cache2/doomed",
+                                        TypeCleaning = TypeCleaning.UserBrowserCache,
+                                        SearchConfig = new SearchConfiguration
+                                        {
+                                            BasePath = Path.Combine(cache2, "doomed"),
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.OnlyFiles,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false
+                                                }
+                                            }
+                                        },
+                                    },
+                                    new SubCleaningInformation
+                                    {
+                                        SectionName = "thumbnails",
+                                        TypeCleaning = TypeCleaning.UserBrowserCache,
+                                        SearchConfig = new SearchConfiguration
+                                        {
+                                            BasePath = Path.Combine(profileDir, "thumbnails"),
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.OnlyFiles,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false,
+                                                }
+                                            }
+                                        },
+                                    },
+                                    new SubCleaningInformation
+                                    {
+                                        SectionName = "jumpListCache",
+                                        TypeCleaning = TypeCleaning.UserBrowserCache,
+                                        SearchConfig = new SearchConfiguration
+                                        {
+                                            BasePath = Path.Combine(profileDir, "jumpListCache"),
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.OnlyFiles,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false
+                                                }
+                                            }
+                                        },
+                                    },
+                                    new SubCleaningInformation
+                                    {
+                                        SectionName = "startupCache",
+                                        TypeCleaning = TypeCleaning.UserBrowserCache,
+                                        SearchConfig = new SearchConfiguration
+                                        {
+                                            BasePath = Path.Combine(profileDir, "startupCache"),
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.OnlyFiles,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false
+                                                }
+                                            }
+                                        },
+                                    },
+                                }
+                            });
+                        }
+                    }
                     continue;
                 }
 
@@ -110,38 +179,19 @@ namespace Computer_Maintenance.Model.Config
 
                 if (browser == "Google Chrome")
                 {
-                    basePath = Path.Combine(
-                        localAppData,
-                        "Google",
-                        "Chrome",
-                        "User Data",
-                        "Default");
+                    basePath = Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default");
                 }
                 else if (browser == "Yandex Browser")
                 {
-                    basePath = Path.Combine(
-                        localAppData,
-                        "Yandex",
-                        "YandexBrowser",
-                        "User Data",
-                        "Default");
+                    basePath = Path.Combine(localAppData, "Yandex", "YandexBrowser", "User Data", "Default");
                 }
                 else if (browser == "Microsoft Edge")
                 {
-                    basePath = Path.Combine(
-                        localAppData,
-                        "Microsoft",
-                        "Edge",
-                        "User Data",
-                        "Default");
+                    basePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default");
                 }
-                else
-                {
-                    basePath = null;
-                }
-                if (basePath == null)
-                    continue;
 
+                if (basePath == null || !Directory.Exists(basePath))
+                    continue;
 
                 locations.Add(new CleaningInformation
                 {
@@ -152,54 +202,120 @@ namespace Computer_Maintenance.Model.Config
                         {
                             TypeCleaning = TypeCleaning.UserBrowserCache,
                             SectionName = "Основной кэш браузера",
-                            Path = Path.Combine(basePath, "Cache"),
-                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                            RecursiveSearch = false
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = Path.Combine(basePath, "Cache"),
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.OnlyFiles,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false
+                                    }
+                                }
+                            }
                         },
                         new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UserBrowserCache,
-                            SectionName = "Кэш скомпилированного кода (JS/WASM)",
-                            Path = Path.Combine(basePath, "Code Cache"),
-                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                            RecursiveSearch = false
+                            SectionName = "Кэш скомпилированного кода",
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = Path.Combine(basePath, "Code Cache"),
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.OnlyFiles,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false
+                                    }
+                                }
+                            }
                         },
                         new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UserBrowserCache,
-                            SectionName = "Кэш графического ускорителя (GPUCache)",
-                            Path = Path.Combine(basePath, "GPUCache"),
-                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                            RecursiveSearch = false
+                            SectionName = "Кэш графического ускорителя",
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = Path.Combine(basePath, "GPUCache"),
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.OnlyFiles,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false
+                                    }
+                                }
+                            }
                         },
                         new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UserBrowserCache,
-                            SectionName = "Кэш сервис-воркеров (офлайн-данные сайтов)",
-                            Path = Path.Combine(basePath, "Service Worker", "CacheStorage"),
-                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                            RecursiveSearch = false,
+                            SectionName = "Кэш сервис-воркеров",
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = Path.Combine(basePath, "Service Worker", "CacheStorage"),
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.OnlyFiles,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false
+                                    }
+                                }
+                            }
                         },
                         new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UserBrowserCache,
                             SectionName = "Файлы восстановления сессии",
-                            Path = Path.Combine(basePath, "Sessions"),
-                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                            RecursiveSearch = false
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = Path.Combine(basePath, "Sessions"),
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.OnlyFiles,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false
+                                    }
+                                }
+                            }
                         },
                         new SubCleaningInformation
                         {
                             TypeCleaning = TypeCleaning.UserBrowserCache,
                             SectionName = "Временные данные расширений",
-                            Path = Path.Combine(basePath, "Storage", "ext"),
-                            Pattern = new CleaningInformation_Pattern { Type = PatternType.All, RecursiveDelete = true },
-                            RecursiveSearch = false
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = Path.Combine(basePath, "Storage", "ext"),
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.OnlyFiles,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false
+                                    }
+                                }
+                            }
                         }
-
                     }
                 });
             }
+
             return locations;
         }
 
@@ -208,7 +324,7 @@ namespace Computer_Maintenance.Model.Config
         private static CleaningInformation GetRecycleBin(DriveInfo dInfo)
         {
             string recycleBinPath = GetRecycleBinPath(dInfo);
-            if (DirectoryService.Exists(recycleBinPath))
+            if (Directory.Exists(recycleBinPath))
             {
                 // Корзина текущего пользователя (только его файлы)
                 string userSid = WindowsIdentity.GetCurrent().User?.Value ?? "";
@@ -219,24 +335,28 @@ namespace Computer_Maintenance.Model.Config
                     {
                         return new CleaningInformation
                         {
-                            OnlyOnePoint = true,
-                            SectionName = $"Корзина ({dInfo.Name.Replace("\\", "")}) - мои файлы",
-                            SubItems = new List<SubCleaningInformation>
+                            SectionName = $"Корзина {dInfo.Name.Replace("\\", "")}",
+                            IsSingleItem = true,
+                            SingleItem = new SubCleaningInformation
                             {
-                                new SubCleaningInformation
+                                TypeCleaning = TypeCleaning.UserRecycleBin,
+                                SectionName = $"Корзина {dInfo.Name}",
+                                SearchConfig = new SearchConfiguration
                                 {
-                                    TypeCleaning = TypeCleaning.UserRecycleBin,
-                                    Path = userRecyclePath,
-                                    Pattern = new CleaningInformation_Pattern
+                                    BasePath = userRecyclePath,
+                                    SearchTarget = SearchTarget.All,
+                                    SearchScope = SearchScope.Recursive,
+                                    DeleteScope = DeleteScope.AllContents,
+                                    IncludePatterns = new List<SearchPattern>
                                     {
-                                        Type = PatternType.All,
-                                        RecursiveDelete = true,
-                                    },
-                                    RecursiveSearch = false,
-                                },
+                                        new SearchPattern
+                                        {
+                                            IsActive = false
+                                        }
+                                    }
+                                }
                             }
-
-                        };
+                        }; 
                     }
                 }
             }
@@ -246,169 +366,262 @@ namespace Computer_Maintenance.Model.Config
         private static CleaningInformation GetUserTemp()
         {
             string tempPath = Path.GetTempPath();
-            if (DirectoryService.Exists(tempPath))
+            if (!Directory.Exists(tempPath)) { return null; }
+
+            return new CleaningInformation
             {
-                return new CleaningInformation
+                SectionName = "Временные файлы текущего пользователя",
+                IsSingleItem = true,
+                SingleItem = new SubCleaningInformation
                 {
-                    SectionName = "Временные файлы текущего пользователя",
-                    OnlyOnePoint = true,
-                    SubItems = new List<SubCleaningInformation>
+                    TypeCleaning = TypeCleaning.UserTemp,
+                    SearchConfig = new SearchConfiguration
                     {
-                        new SubCleaningInformation
+                        BasePath = tempPath,
+                        SearchTarget = SearchTarget.Files,
+                        SearchScope = SearchScope.Recursive,
+                        DeleteScope = DeleteScope.OnlyFiles,
+                        IncludePatterns = new List<SearchPattern>
                         {
-                            TypeCleaning = TypeCleaning.UserTemp,
-                            Path = tempPath,
-                            Pattern = new CleaningInformation_Pattern
+                            new SearchPattern
                             {
-                                Type = PatternType.All,
-                                RecursiveDelete = true,
-                            },
-                            RecursiveSearch = false
+                                IsActive = false
+                            }
                         }
                     }
-                };
-            }
-            return null;
+                }
+            };
         }
 
-        private static CleaningInformation GetWindowsCache()
+        private static CleaningInformation GetWindowsTemp()
         {
             string thumbnailCachePath = Path.Combine(localAppData, "Microsoft", "Windows", "Explorer");
             string D3DSCache = Path.Combine(localAppData, "D3DSCache");
             string updateCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download");
             string dataStoreLogs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "DataStore", "Logs");
-
-            if (Directory.Exists(thumbnailCachePath))
-            {
-                return new CleaningInformation
-                {
-                    SectionName = "Кэш создаваемой Windows",
-                    SubItems = new List<SubCleaningInformation>
-                    {
-                        new SubCleaningInformation
-                        {
-                            TypeCleaning = TypeCleaning.ThumbnailCache,
-                            SectionName = "Кэш эскизов изображений",
-                            Path = thumbnailCachePath,
-                            Pattern = new CleaningInformation_Pattern
-                            {
-                                Type = PatternType.File,
-                                IncludePattern = new List<string>
-                                {
-                                    "thumbcache_*.db",
-                                    "iconcache_*.db",
-                                },
-                                RecursiveDelete = true,
-                            },
-                            RecursiveSearch = true
-                        },
-                        new SubCleaningInformation
-                        {
-                            TypeCleaning = TypeCleaning.D3DSCache,
-                            SectionName = "Кэш DirectX",
-                            Path = D3DSCache,
-                            Pattern = new
-                            CleaningInformation_Pattern
-                            {
-                                Type = PatternType.All,
-                                RecursiveDelete = true,
-                            },
-                            RecursiveSearch = false
-                        },
-                        new SubCleaningInformation
-                        {
-                            TypeCleaning = TypeCleaning.WindowsUpdateCache,
-                            SectionName = "Кэш центра обновления Windows",
-                            Path = updateCache,
-                            Pattern = new CleaningInformation_Pattern
-                            {
-                                Type = PatternType.All,
-                                RecursiveDelete = true
-                            },
-                        },
-                        new SubCleaningInformation
-                        {
-                            TypeCleaning = TypeCleaning.WindowsUpdateLogs,
-                            SectionName = "Логи центра обновления Windows",
-                            Path = dataStoreLogs,
-                            Pattern = new CleaningInformation_Pattern
-                            {
-                                Type = PatternType.All,
-                                RecursiveDelete = true
-                            },
-                            RecursiveSearch = false
-                        }
-                    }
-                };
-            }
-            return null;
-        }
-
-        private static CleaningInformation GetWindowsErrorReporting()
-        {
             string WindowsErrorReporting = Path.Combine(localAppData, "Microsoft", "Windows", "WER");
-
-            if (Directory.Exists(WindowsErrorReporting))
-            {
-                return new CleaningInformation
-                {
-                    SectionName = "Отчеты об ошибках Windows",
-                    OnlyOnePoint = true,
-                    SubItems = new List<SubCleaningInformation>
-                    {
-                        new SubCleaningInformation
-                        {
-                            TypeCleaning = TypeCleaning.WindowsErrorReporting,
-                            Path = WindowsErrorReporting,
-                            Pattern = new CleaningInformation_Pattern{
-                                Type = PatternType.Folder,
-                                IncludePattern = new List<string>()
-                                {
-                                    "ReportArchive",
-                                    "ReportQueue",
-                                    "Temp"
-                                },
-                                RecursiveDelete = true,
-                            },
-                            RecursiveSearch = true,
-                        }
-                    }
-                };
-            }
-            return null;
-        }
-            
-        private static CleaningInformation GetWindowsTemp()
-        {
             string packagesPath = Path.Combine(localAppData, "Packages");
-            if (DirectoryService.Exists(packagesPath))
+
+            return new CleaningInformation
             {
-                return new CleaningInformation
-                {
-                    SectionName = "Временные файлы создаваемой Windows",
-                    SubItems = new List<SubCleaningInformation>
+                SectionName = "Временные файлы создаваемой Windows",
+                IsSingleItem = false,
+                SubItems = new List<SubCleaningInformation>
                     {
                         new SubCleaningInformation
                         {
-                            TypeCleaning = TypeCleaning.UWPTempFiles,
-                            SectionName = "Временные файлы приложений Microsoft Store",
-                            Path = packagesPath,
-                            Pattern = new CleaningInformation_Pattern
+                            SectionName = "Кэш эскизов изображений",
+                            TypeCleaning = TypeCleaning.ThumbnailCache,
+                            SearchConfig = new SearchConfiguration
                             {
-                                Type = PatternType.Folder,
-                                IncludePattern = new List<string>()
+                                BasePath = thumbnailCachePath,
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.OnlyFiles,
+                                IncludePatterns = new List<SearchPattern>
                                 {
-                                    "Temp",
-                                    "TempState"
+                                    new SearchPattern
+                                    {
+                                        IsActive = true,
+                                        Pattern = "thumbcache_*.db",
+                                        PatternMatchType = FilesAndDirectories.PatternMatchType.Simple,
+                                    },
+                                    new SearchPattern
+                                    {
+                                        IsActive = true,
+                                        Pattern = "iconcache_*.db",
+                                        PatternMatchType = FilesAndDirectories.PatternMatchType.Simple,
+                                    }
                                 },
-                                RecursiveDelete = true,
                             },
-                            RecursiveSearch = true
+
+                        },
+                        new SubCleaningInformation
+                        {
+                            SectionName = "Кэш DirectX",
+                            TypeCleaning = TypeCleaning.D3DSCache,
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = D3DSCache,
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.AllContents,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false,
+                                    }
+                                }
+                            }
+                        },
+
+                        new SubCleaningInformation
+                        {
+                            SectionName = "Кэш центра обновления Windows",
+                            TypeCleaning = TypeCleaning.WindowsUpdateCache,
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = updateCache,
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.AllContents,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false,
+                                    }
+                                }
+
+                            }
+                        },
+                        new SubCleaningInformation
+                        {
+                            SectionName = "Логи центра обновления Windows",
+                            TypeCleaning = TypeCleaning.WindowsUpdateLogs,
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = dataStoreLogs,
+                                SearchTarget = SearchTarget.Files,
+                                SearchScope = SearchScope.Recursive,
+                                DeleteScope = DeleteScope.AllContents,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = false,
+                                    }
+                                }
+                            }
+                        },
+                        new SubCleaningInformation
+                        {
+                            SectionName = "Отчеты об ошибках Windows",
+                            TypeCleaning = TypeCleaning.WindowsErrorReporting,
+                            SearchConfig = new SearchConfiguration
+
+                            {
+                                BasePath = WindowsErrorReporting,
+                                SearchTarget = SearchTarget.Directories,
+                                SearchScope = SearchScope.Recursive,
+
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = true,
+                                        Pattern = "ReportArchive",
+                                        PatternMatchType = FilesAndDirectories.PatternMatchType.Exact,
+                                        ChildConfiguration = new SearchConfiguration
+                                        {
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.AllContents,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false,
+                                                }
+                                            }
+                                        }
+                                    },
+                                    new SearchPattern
+                                    {
+                                        IsActive = true,
+                                        Pattern = "ReportQueue",
+                                        PatternMatchType = FilesAndDirectories.PatternMatchType.Exact,
+                                        ChildConfiguration = new SearchConfiguration
+                                        {
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.AllContents,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false,
+                                                }
+                                            }
+                                        }
+                                    },
+                                    new SearchPattern
+                                    {
+                                        IsActive = true,
+                                        Pattern = "Temp",
+                                        PatternMatchType = FilesAndDirectories.PatternMatchType.Exact,
+                                        ChildConfiguration = new SearchConfiguration
+                                        {
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.AllContents,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false,
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        new SubCleaningInformation
+                        {
+                            SectionName = "Временные файлы приложений Microsoft Store",
+                            TypeCleaning = TypeCleaning.UWPTempFiles,
+                            SearchConfig = new SearchConfiguration
+                            {
+                                BasePath = packagesPath,
+                                SearchTarget = SearchTarget.Directories,
+                                SearchScope = SearchScope.Recursive,
+                                IncludePatterns = new List<SearchPattern>
+                                {
+                                    new SearchPattern
+                                    {
+                                        IsActive = true,
+                                        Pattern = "Temp",
+                                        PatternMatchType = FilesAndDirectories.PatternMatchType.Exact,
+                                        ChildConfiguration = new SearchConfiguration
+                                        {
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.AllContents,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false,
+                                                }
+                                            }
+                                        }
+                                    },
+                                    new SearchPattern
+                                    {
+                                        IsActive = true,
+                                        Pattern = "TempState",
+                                        PatternMatchType = FilesAndDirectories.PatternMatchType.Exact,
+                                        ChildConfiguration = new SearchConfiguration
+                                        {
+                                            SearchTarget = SearchTarget.Files,
+                                            SearchScope = SearchScope.Recursive,
+                                            DeleteScope = DeleteScope.AllContents,
+                                            IncludePatterns = new List<SearchPattern>
+                                            {
+                                                new SearchPattern
+                                                {
+                                                    IsActive = false,
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                };
-            }
-            return null;
+            };  
         }
 
         private static CleaningInformation GetApllicationsCrashDump()
@@ -419,27 +632,30 @@ namespace Computer_Maintenance.Model.Config
                 return new CleaningInformation
                 {
                     SectionName = "Дампы ошибок приложений",
-                    OnlyOnePoint = true,
-                    SubItems = new List<SubCleaningInformation>
+                    IsSingleItem = true,
+                    SingleItem = new SubCleaningInformation
                     {
-                        new SubCleaningInformation
+                        TypeCleaning = TypeCleaning.CrashDumps,
+                        SearchConfig = new SearchConfiguration
                         {
-                             TypeCleaning = TypeCleaning.CrashDumps,
-                             Path = crashDumpsPath,
-                             Pattern = new
-                             CleaningInformation_Pattern
-                             {
-                                 Type = PatternType.All,
-                                 RecursiveDelete = false,
-                             },
-                             RecursiveSearch = false
+                            BasePath = crashDumpsPath,
+                            SearchTarget = SearchTarget.Files,
+                            SearchScope = SearchScope.Recursive,
+                            DeleteScope = DeleteScope.AllContents,
+                            IncludePatterns = new List<SearchPattern>
+                            {
+                                new SearchPattern
+                                {
+                                    IsActive = false,
+                                }
+                            }
                         }
                     }
                 };
             }
             return null;
         }
-        
+
 
         ///<summary>
         ///Метод для получения информации о чистки
@@ -453,9 +669,7 @@ namespace Computer_Maintenance.Model.Config
                 locations.AddRange(GetBrowserCaches(dInfo));
                 locations.Add(GetRecycleBin(dInfo));
                 locations.Add(GetUserTemp());
-                locations.Add(GetWindowsCache());
                 locations.Add(GetWindowsTemp());
-                locations.Add(GetWindowsErrorReporting());
                 locations.Add(GetApllicationsCrashDump());
             }
             return locations;
@@ -482,27 +696,27 @@ namespace Computer_Maintenance.Model.Config
 
             // Chrome
             string chromePath = Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Cache");
-            if (DirectoryService.Exists(chromePath))
+            if (Directory.Exists(chromePath))
                 caches.Add("Google Chrome");
 
             // Yandex
             string yandexPath = Path.Combine(localAppData, "Yandex", "YandexBrowser", "User Data", "Default", "Cache");
-            if (DirectoryService.Exists(yandexPath))
+            if (Directory.Exists(yandexPath))
                 caches.Add("Yandex Browser");
 
             // Edge
             string edgePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Cache");
-            if (DirectoryService.Exists(edgePath))
+            if (Directory.Exists(edgePath))
                 caches.Add("Microsoft Edge");
 
             // Firefox (несколько профилей → достаточно наличия хотя бы одного)
             string firefoxProfilesPath = Path.Combine(appData, "Mozilla", "Firefox", "Profiles");
-            if (DirectoryService.Exists(firefoxProfilesPath))
+            if (Directory.Exists(firefoxProfilesPath))
             {
-                foreach (var profileDir in DirectoryService.GetDirectories(firefoxProfilesPath))
+                foreach (var profileDir in Directory.GetDirectories(firefoxProfilesPath))
                 {
                     string cacheDir = Path.Combine(profileDir, "cache2");
-                    if (DirectoryService.Exists(cacheDir))
+                    if (Directory.Exists(cacheDir))
                     {
                         caches.Add("Mozilla Firefox");
                         break;

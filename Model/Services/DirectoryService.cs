@@ -2,6 +2,32 @@
 {
     public static class DirectoryService
     {
+
+        /// <summary>
+        /// Метод возврощающий все файлы в каталоге и подкаталогах включая текущий каталог
+        /// </summary>
+        public static string[] GetFilesRecursiveIncludeCurrentCatalog(string path, string pattern = "*")
+        {
+            try
+            {
+
+                EnumerationOptions options = new EnumerationOptions
+                {
+                    AttributesToSkip = FileAttributes.System | FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint | FileAttributes.Encrypted,
+                    IgnoreInaccessible = true,
+                    MatchCasing = MatchCasing.PlatformDefault,
+                    MatchType = MatchType.Win32,
+                    RecurseSubdirectories = true,
+                    ReturnSpecialDirectories = false,
+                };
+
+                return Directory.GetFiles(path, pattern, options);
+            }
+            catch
+            {
+                return Array.Empty<string>();
+            }
+        }
         public static string[] GetFiles(string path, string pattern = "*", EnumerationOptions enumerationOptions = null)
         {
             try
@@ -10,9 +36,10 @@
                 {
                     enumerationOptions = new EnumerationOptions
                     {
-                        RecurseSubdirectories = false,
-                        IgnoreInaccessible = false,
+                        RecurseSubdirectories = true,
+                        IgnoreInaccessible = true,
                         ReturnSpecialDirectories = false,
+                        MatchType = MatchType.Win32
                     };
                 }
                 return Directory.GetFiles(path, pattern, enumerationOptions);

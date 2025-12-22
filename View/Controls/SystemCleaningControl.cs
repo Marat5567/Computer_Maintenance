@@ -276,7 +276,7 @@ namespace Computer_Maintenance.Controls
                     {
                         foreach (var sub in cleanInfo.SubItems)
                         {
-                            if (sub == null || cleanInfo.OnlyOnePoint)
+                            if (sub == null || cleanInfo.IsSingleItem)
                                 continue;
 
                             FlowLayoutPanel subItemPanel = new FlowLayoutPanel
@@ -315,7 +315,7 @@ namespace Computer_Maintenance.Controls
 
                     mainCheckBox.CheckedChanged += (s, e) =>
                     {
-                        if (!cleanInfo.OnlyOnePoint)
+                        if (!cleanInfo.IsSingleItem)
                             subItemsContainer.Visible = mainCheckBox.Checked;
                     };
 

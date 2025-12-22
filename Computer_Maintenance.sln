@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36408.4 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11304.174 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Computer_Maintenance", "Computer_Maintenance.csproj", "{0332BFFB-7A8F-4AC2-BB9A-C189ACD291E7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Computer_Maintenanse_TEST", "..\Computer_Maintenanse_TEST\Computer_Maintenanse_TEST.csproj", "{1E7A6A45-650E-415B-93D9-DA350AC11EB2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{0332BFFB-7A8F-4AC2-BB9A-C189ACD291E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0332BFFB-7A8F-4AC2-BB9A-C189ACD291E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0332BFFB-7A8F-4AC2-BB9A-C189ACD291E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E7A6A45-650E-415B-93D9-DA350AC11EB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E7A6A45-650E-415B-93D9-DA350AC11EB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E7A6A45-650E-415B-93D9-DA350AC11EB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E7A6A45-650E-415B-93D9-DA350AC11EB2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

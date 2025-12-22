@@ -50,7 +50,7 @@ namespace Computer_Maintenance.Presenters
             {
                 if (dInfo == null) continue;
 
-                List<CleaningInformation> cleaningInformation = _model?.GetLocationsByAccessForDrive(dInfo) ?? new List<CleaningInformation>();
+                List<CleaningInformation> cleaningInformation = _model?.GetLocationsForDrive(dInfo) ?? new List<CleaningInformation>();
 
                 object lockObject = new object();
                 List<Task> tasks = new List<Task>();
@@ -60,20 +60,30 @@ namespace Computer_Maintenance.Presenters
                     int index = i;
                     tasks.Add(Task.Run(() =>
                     {
-                        var cleaningInfo = cleaningInformation[index];
+                        CleaningInformation cleaningInfo = cleaningInformation[index];
+
                         if (cleaningInfo == null) return;
 
-                        var localSubItems = cleaningInfo.SubItems?.ToList() ?? new List<SubCleaningInformation>();
+                        List<SubCleaningInformation> localSubItems = cleaningInfo.SubItems?.ToList() ?? new List<SubCleaningInformation>();
 
                         StorageSize totalSize = new StorageSize();
 
-                        foreach (var subCleaningInformation in localSubItems)
+                        if (cleaningInfo.IsSingleItem)
                         {
-                            if (subCleaningInformation == null) continue;
+                            totalSize = _model.GetSizeSubSection(cleaningInfo.SingleItem);
+                        }
+                        else
+                        {
 
-                            StorageSize size = _model.GetSizeSection(subCleaningInformation);
-                            subCleaningInformation.Size = size;
-                            totalSize.AddSize(size);
+                            foreach (SubCleaningInformation subCleaningInformation in localSubItems)
+                            {
+                                if (subCleaningInformation == null) continue;
+
+                                StorageSize size = _model.GetSizeSubSection(subCleaningInformation);
+                                subCleaningInformation.Size = size;
+
+                                totalSize.AddSize(size);
+                            }
                         }
 
                         lock (lockObject)
