@@ -3,7 +3,6 @@ using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
-
 using System.Text.RegularExpressions;
 
 
@@ -14,6 +13,15 @@ namespace Computer_Maintenance.Model.Models
     {
         private readonly object _regexCacheLock = new object();
         private Dictionary<string, Regex> _regexCache = new();
+
+        //Маска атрибутов для пропуска
+        private FileAttributes skipMask =
+            FileAttributes.ReparsePoint     // Символические ссылки, junction’ы, точки монтирования (риск зацикливания и выхода за пределы каталога)
+          | FileAttributes.Device           // Псевдофайлы устройств (CON, NUL и т.п.), не имеют реального размера
+          | FileAttributes.Offline          // Файлы, отсутствующие локально (OneDrive / Remote Storage), реального размера на диске нет
+          | FileAttributes.IntegrityStream; // Файлы с контрольными суммами (ReFS / Storage Spaces), возможны ограничения доступа и некорректный подсчёт
+
+
 
         ///<summary>
         ///Метод для получения доступных накопителей
@@ -88,6 +96,7 @@ namespace Computer_Maintenance.Model.Models
             {
                 do
                 {
+                    if ((findData.dwFileAttributes & (int)skipMask) != 0) { continue; }
                     string name = GetFileNamePtr(&findData);
                     if (name == "." || name == "..") continue;
 
@@ -101,6 +110,7 @@ namespace Computer_Maintenance.Model.Models
                     // Если нет активных include-шаблонов — считать все папки как совпадающие
                     bool hasActiveInclude = includePatterns != null && includePatterns.Count > 0 && includePatterns.Exists(p => p.IsActive);
                     bool includeMatched = !hasActiveInclude;
+                    bool handledByChild = false;
 
                     if (hasActiveInclude)
                     {
@@ -112,7 +122,7 @@ namespace Computer_Maintenance.Model.Models
                             {
                                 includeMatched = true;
 
-                                // Обработать child-конфигурацию (вызов даже при пустом child.IncludePatterns)
+                                // Обработать child-конфигурацию (если задана)
                                 if (p.ChildConfiguration != null)
                                 {
                                     // проверить, не исключена ли папка по глобальным excludePatterns
@@ -134,11 +144,20 @@ namespace Computer_Maintenance.Model.Models
                                     if (!excludedGlobally)
                                     {
                                         string childPath = Path.Combine(directoryPath, name);
-                                        bool recursiveChild = ((p.ChildConfiguration.SearchScope & FilesAndDirectories.SearchScope.Recursive) != 0);
+
+                                        // Подготовим параметры child-конфигурации и вызовем универсальную функцию подсчёта,
+                                        // чтобы корректно обработать и файлы, и директории согласно child-настройкам.
+                                        var childSearchTarget = p.ChildConfiguration.SearchTarget;
+                                        var childSearchScope = p.ChildConfiguration.SearchScope;
+                                        var childDeleteScope = p.ChildConfiguration.DeleteScope;
                                         List<SearchPattern> includePatternsChild = p.ChildConfiguration.IncludePatterns ?? new List<SearchPattern>();
                                         List<SearchPattern> excludePatternsChild = p.ChildConfiguration.ExcludePatterns ?? new List<SearchPattern>();
 
-                                        totalSize += GetSizeFilesWinApi(childPath, recursiveChild, ref includePatternsChild, ref excludePatternsChild);
+                                        totalSize += GetSizeWinApi(childPath, ref childSearchTarget, ref childSearchScope, ref childDeleteScope, ref includePatternsChild, ref excludePatternsChild);
+
+                                        // отметим, что каталог полностью обработан child-конфигурацией —
+                                        // чтобы избежать дальнейшей рекурсивной обработки этим же каталогом
+                                        handledByChild = true;
                                     }
                                 }
 
@@ -163,8 +182,9 @@ namespace Computer_Maintenance.Model.Models
                         }
                     }
 
-                    // Рекурсивно спускаемся в поддиректории для поиска других совпадающих папок
-                    if (recursive && !excluded)
+                    // Рекурсивно спускаемся в поддиректории для поиска других совпадающих папок.
+                    // Если каталог уже был обработан child-конфигурацией — пропускаем рекурсию, чтобы не дублировать подсчёт.
+                    if (recursive && !excluded && !handledByChild)
                     {
                         string childDir = Path.Combine(directoryPath, name);
                         totalSize += GetSizeFoldersWinApi(childDir, recursive, ref includePatterns, ref excludePatterns);
@@ -200,6 +220,8 @@ namespace Computer_Maintenance.Model.Models
             {
                 do
                 {
+                    if ((findData.dwFileAttributes & (int)skipMask) != 0) { continue; }
+
                     string name = GetFileNamePtr(&findData);
                     if (name == "." || name == "..") continue;
 

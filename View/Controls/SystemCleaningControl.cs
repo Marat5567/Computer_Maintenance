@@ -16,11 +16,10 @@ namespace Computer_Maintenance.Controls
         {
             InitializeComponent();
         }
-
         private void SystemCleaningControl_Load(object sender, EventArgs e)
         {
-            LoadDrivesRequested?.Invoke(this, EventArgs.Empty);
             ThemeService.RefreshTheme(this);
+            LoadDrivesRequested?.Invoke(this, EventArgs.Empty);
         }
         private void buttonStartScan_Click(object sender, EventArgs e)
         {
@@ -32,6 +31,7 @@ namespace Computer_Maintenance.Controls
         }
         private void buttonRefreshDrives_Click(object sender, EventArgs e)
         {
+            ClearAll();
             LoadDrivesRequested.Invoke(this, EventArgs.Empty);
         }
         //<summary>
@@ -371,17 +371,16 @@ namespace Computer_Maintenance.Controls
         ///<summary>
         ///Метод для очистки панели выбранных дисков
         ///<summary>
-        public void ClearCheckedDrives()
+        ///
+
+        public void ClearInfoDrives()
         {
-            if (flowLayoutPanelInfoDrives.Controls.Count >= 1)
-            {
-                flowLayoutPanelInfoDrives.Controls.Clear();
-            }
+            flowLayoutPanelInfoDrives.Controls.Clear();
         }
         ///<summary>
-        ///Метод для очистки всех эдеметов по событию LoadDrives
+        ///Метод для очистки всех элеметов по событию LoadDrives
         ///<summary>
-        public void ClearAllByEvent_LoadDrives()
+        private void ClearAll()
         {
             flowLayoutPanelDrives.Controls.Clear();
             flowLayoutPanelInfoDrives.Controls.Clear();

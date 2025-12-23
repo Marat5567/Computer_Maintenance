@@ -5,10 +5,8 @@
         [Flags]
         public enum SearchTarget
         {
-            None = 0,
             Files = 1 << 0,     // Поиск файлов
             Directories = 1 << 1, // Поиск папок
-            All = Files | Directories
         }
 
         [Flags]
@@ -22,8 +20,7 @@
         public enum DeleteScope
         {
             OnlyFiles = 1 << 0,     // Удалять только файлы
-            EmptyDirectories = 1 << 1,   // Удалять пустые папки
-            AllContents = 1 << 2,        // Удалять все содержимое
+            AllContents = 1 << 1,        // Удалять все содержимое включая папки
         }
 
         public enum PatternMatchType
