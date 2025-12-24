@@ -10,8 +10,7 @@ namespace Computer_Maintenance.Presenters
         private readonly ISystemCleaningView _view; 
         private readonly SystemCleaningModel _model;
 
-        private List<DriveInfo> _allDrives; //Список всех доступных дисков
-        private List<DriveInfo> _selectedDrives; //Список выбранных дисков
+        private List<DriveInfo>? _selectedDrives; //Список выбранных дисков
         private bool _scanClicked = false; //Состояние нажатия сканирование
 
         public SystemCleaningPresenter(ISystemCleaningView view, SystemCleaningModel model)
@@ -20,27 +19,17 @@ namespace Computer_Maintenance.Presenters
             _model = model;
 
             _view.LoadDrivesRequested += OnLoadDrivesRequested;
-            _view.StartScanClicked += OnStartScan;
+            _view.StartScanClicked += async (s,e) => await OnStartScanAsync(s,e);
             _view.StartCleanClicked += OnStartClean;
         }
 
         private void OnLoadDrivesRequested(object sender, EventArgs e)
         {
-            if (_allDrives != null && _allDrives.Count > 0)
-            {
-                _allDrives.Clear();
-            }
-
-            if (_selectedDrives != null && _selectedDrives.Count > 0)
-            {
-                _selectedDrives.Clear();
-            }
-
-            _allDrives = _model.GetDrives();
-            _view.ShowAvailableDrives(ref _allDrives);
+            List<DriveInfo> _allDrives = _model.GetDrives();
+            _view.ShowAvailableDrives(_allDrives);
         }
 
-        private async void OnStartScan(object sender, EventArgs e)
+        private async Task OnStartScanAsync(object sender, EventArgs e)
         {
             _selectedDrives = _view.GetSelectedDrives();
 
@@ -61,71 +50,42 @@ namespace Computer_Maintenance.Presenters
             {
                 if (dInfo == null) { continue; }
 
-                List<CleaningInformation> cleaningInformation = _model.GetLocationsForDrive(dInfo);
-
-                //if (cleaningInformation == null || cleaningInformation.Count == 0) { continue; }
-
-                //Фильтрация несуществующих путей
-                foreach (CleaningInformation info in cleaningInformation.ToList())
-                {
-                    if (info.IsSingleItem)
-                    {
-                        if (!Directory.Exists(info.SingleItem.SearchConfig.BasePath))
-                        {
-                            cleaningInformation.Remove(info);
-                        }
-                    }
-                    else
-                    {
-                        info.SubItems = info.SubItems.Where(s => Directory.Exists(s.SearchConfig.BasePath)).ToList();
-                        if (info.SubItems.Count == 0)
-                        {
-                            cleaningInformation.Remove(info);
-                        }
-                    }
-                }
-
-                object lockObject = new object();
                 List<Task> tasks = new List<Task>();
 
-                for (int i = 0; i < cleaningInformation.Count; i++)
+                List<CleaningInformation> cleaningInformations = _model.GetLocationsForDrive(dInfo);
+                foreach (CleaningInformation cleaningInfo in cleaningInformations)
                 {
-                    int index = i;
-                    tasks.Add(Task.Run(() =>
+                    if (cleaningInfo == null) { continue; }
+                    tasks.Add(Task.Run(async () =>
                     {
-                        CleaningInformation cleaningInfo = cleaningInformation[index];
-
-                        if (cleaningInfo == null) return;
-
-                        List<SubCleaningInformation> localSubItems = cleaningInfo.SubItems?.ToList() ?? new List<SubCleaningInformation>();
-
                         StorageSize totalSize = new StorageSize();
-
                         if (cleaningInfo.IsSingleItem)
                         {
                             totalSize = _model.GetSizeSubSection(cleaningInfo.SingleItem);
                         }
-                        else
+                        else if (cleaningInfo.SubItems != null && cleaningInfo.SubItems.Count > 0)
                         {
+                            List<Task<StorageSize>> subTasks = new List<Task<StorageSize>>();
 
-                            foreach (SubCleaningInformation subCleaningInformation in localSubItems)
+                            foreach (SubCleaningInformation subInfo in cleaningInfo.SubItems)
                             {
-                                if (subCleaningInformation == null) continue;
+                                if (subInfo == null) { continue; }
 
-                                StorageSize size = _model.GetSizeSubSection(subCleaningInformation);
-                                subCleaningInformation.Size = size;
-
+                                subTasks.Add(Task.Run(() =>
+                                {
+                                    subInfo.Size = _model.GetSizeSubSection(subInfo);
+                                    return subInfo.Size;
+                                }));
+                            }
+                            StorageSize[] subSizes = await Task.WhenAll(subTasks);
+                            foreach (StorageSize size in subSizes)
+                            {
                                 totalSize.AddSize(size);
                             }
                         }
-
-                        lock (lockObject)
-                        {
-                            cleaningInfo.Size = totalSize;
-                        }
+                        cleaningInfo.Size = totalSize;
                     }));
                 }
-
                 try
                 {
                     await Task.WhenAll(tasks);
@@ -134,23 +94,19 @@ namespace Computer_Maintenance.Presenters
                 {
                     ShowError($"Ошибка: {ex.Message}");
                 }
-
-                _view.ShowCheckedDriveSafe(dInfo, cleaningInformation);
-                _scanClicked = false;
+                _view.ShowCheckedDriveSafe(dInfo, cleaningInformations);
             }
+            _scanClicked = false;
         }
-
 
         public void OnStartClean(object sender, EventArgs e)
         {
-            if (_selectedDrives.Count <= 0)
+            if (_selectedDrives == null || _selectedDrives.Count == 0)
             {
                 ShowInfo("Выполните сканирование");
                 return;
             }
         }
-
-
 
         private void ShowInfo(string message)
         {

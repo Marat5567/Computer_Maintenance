@@ -1,8 +1,6 @@
-﻿using Computer_Maintenance.Model.Config;
-
-namespace Computer_Maintenance.Model.Structs
+﻿namespace Computer_Maintenance.Model.Structs
 {
-    public struct StorageSize
+    public class StorageSize
     {
         public uint TB { get; set; }
         public uint GB { get; set; }

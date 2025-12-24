@@ -37,7 +37,7 @@ namespace Computer_Maintenance.Controls
         //<summary>
         //Метод для вывода всех доступных дисков
         //<summary>
-        public void ShowAvailableDrives(ref List<DriveInfo> dInfos)
+        public void ShowAvailableDrives(List<DriveInfo> dInfos)
         {
             flowLayoutPanelDrives.Controls.Clear();
 
@@ -137,16 +137,16 @@ namespace Computer_Maintenance.Controls
         public void ShowCheckedDriveSafe(DriveInfo dInfo, List<CleaningInformation> cleaningInformation)
         {
             if (this.InvokeRequired)
-                this.Invoke(new Action(() => ShowCheckedDrive(dInfo, ref cleaningInformation)));
+                this.Invoke(new Action(() => ShowCheckedDrive(dInfo, cleaningInformation)));
             else
-                ShowCheckedDrive(dInfo, ref cleaningInformation);
+                ShowCheckedDrive(dInfo, cleaningInformation);
         }
 
 
         //<summary>
         //Метод для вывода выбранных дисков
         //<summary>
-        public void ShowCheckedDrive(DriveInfo dInfo, ref List<CleaningInformation> cleaningInformation)
+        public void ShowCheckedDrive(DriveInfo dInfo, List<CleaningInformation> cleaningInformation)
         {
 
             if (flowLayoutPanelInfoDrives == null)

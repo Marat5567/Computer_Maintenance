@@ -8,10 +8,10 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler StartScanClicked; //Событие на нажате кнопки начать сканирование
         event EventHandler StartCleanClicked; //Событие на нажате кнопки начать очистку
        
-        void ShowAvailableDrives(ref List<DriveInfo> dInfos); //Метод для показа доступных дисков
+        void ShowAvailableDrives(List<DriveInfo> dInfos); //Метод для показа доступных дисков
         List<DriveInfo> GetSelectedDrives(); //Метод для получения выбранных дисков
         List<CleaningInformation> GetSelectedOptions(); //Метод для получения выбранных опций
-        void ShowCheckedDrive(DriveInfo dInfo, ref List<CleaningInformation> cleaningInformation); //Метод для вывода выбранных дисков
+        void ShowCheckedDrive(DriveInfo dInfo, List<CleaningInformation> cleaningInformation); //Метод для вывода выбранных дисков
         void ShowCheckedDriveSafe(DriveInfo dInfo, List<CleaningInformation> cleaningInformation);
         void ClearInfoDrives(); // Метод для очистки информации о выбранных дисках
     }

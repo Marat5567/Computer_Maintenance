@@ -5,23 +5,20 @@ using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
 using System.Text.RegularExpressions;
 
-
 namespace Computer_Maintenance.Model.Models
 {
 
     public class SystemCleaningModel
     {
-        private readonly object _regexCacheLock = new object();
+        private readonly object _regexCacheLock = new object(); 
         private Dictionary<string, Regex> _regexCache = new();
 
-        //Маска атрибутов для пропуска
+        //Маска атрибутов для пропуска при сканировании
         private FileAttributes skipMask =
             FileAttributes.ReparsePoint     // Символические ссылки, junction’ы, точки монтирования (риск зацикливания и выхода за пределы каталога)
           | FileAttributes.Device           // Псевдофайлы устройств (CON, NUL и т.п.), не имеют реального размера
           | FileAttributes.Offline          // Файлы, отсутствующие локально (OneDrive / Remote Storage), реального размера на диске нет
           | FileAttributes.IntegrityStream; // Файлы с контрольными суммами (ReFS / Storage Spaces), возможны ограничения доступа и некорректный подсчёт
-
-
 
         ///<summary>
         ///Метод для получения доступных накопителей
@@ -68,14 +65,37 @@ namespace Computer_Maintenance.Model.Models
             FilesAndDirectories.SearchScope searchScope = subCleaningInformation.SearchConfig.SearchScope;
             FilesAndDirectories.DeleteScope deleteScope = subCleaningInformation.SearchConfig.DeleteScope;
 
-            List<SearchPattern> includePatterns = subCleaningInformation.SearchConfig.IncludePatterns;
-            List<SearchPattern> excludePatterns = subCleaningInformation.SearchConfig.ExcludePatterns;
-
-            int bytesReaded = 0;
-            totalSizeBytes = GetSizeWinApi(path, ref searchTarget, ref searchScope, ref deleteScope, ref includePatterns, ref excludePatterns);
+            totalSizeBytes = GetSizeWinApi(path, ref searchTarget, ref searchScope, ref deleteScope, subCleaningInformation.SearchConfig.IncludePatterns, subCleaningInformation.SearchConfig.ExcludePatterns);
             return ConvertSizeService.ConvertSize(totalSizeBytes);
         }
-        private unsafe long GetSizeFoldersWinApi(string directoryPath, bool recursive, ref List<SearchPattern> includePatterns, ref List<SearchPattern> excludePatterns)
+
+        private unsafe long GetSizeWinApi(
+                   string path,
+                   ref FilesAndDirectories.SearchTarget searchTarget,
+                   ref FilesAndDirectories.SearchScope searchScope,
+                   ref FilesAndDirectories.DeleteScope deleteScope,
+                   List<SearchPattern> includePatterns,
+                   List<SearchPattern> excludePatterns)
+        {
+            if (!Directory.Exists(path)) return 0;
+            long totalSize = 0;
+
+            if ((searchTarget & FilesAndDirectories.SearchTarget.Files) != 0)
+            {
+                bool recursive = ((searchScope & FilesAndDirectories.SearchScope.Recursive) != 0);
+                // Всегда запускаем обход — пустой include трактуем как "включать все файлы".
+                totalSize += GetSizeFilesWinApi(path, recursive, includePatterns, excludePatterns);
+            }
+            if ((searchTarget & FilesAndDirectories.SearchTarget.Directories) != 0)
+            {
+                bool recursive = ((searchScope & FilesAndDirectories.SearchScope.Recursive) != 0);
+                totalSize += GetSizeFoldersWinApi(path, recursive, includePatterns, excludePatterns);
+            }
+
+            return totalSize;
+        }
+
+        private unsafe long GetSizeFoldersWinApi(string directoryPath, bool recursive, List<SearchPattern> includePatterns, List<SearchPattern> excludePatterns)
         {
             long totalSize = 0;
 
@@ -153,7 +173,7 @@ namespace Computer_Maintenance.Model.Models
                                         List<SearchPattern> includePatternsChild = p.ChildConfiguration.IncludePatterns ?? new List<SearchPattern>();
                                         List<SearchPattern> excludePatternsChild = p.ChildConfiguration.ExcludePatterns ?? new List<SearchPattern>();
 
-                                        totalSize += GetSizeWinApi(childPath, ref childSearchTarget, ref childSearchScope, ref childDeleteScope, ref includePatternsChild, ref excludePatternsChild);
+                                        totalSize += GetSizeWinApi(childPath, ref childSearchTarget, ref childSearchScope, ref childDeleteScope, includePatternsChild, excludePatternsChild);
 
                                         // отметим, что каталог полностью обработан child-конфигурацией —
                                         // чтобы избежать дальнейшей рекурсивной обработки этим же каталогом
@@ -187,7 +207,7 @@ namespace Computer_Maintenance.Model.Models
                     if (recursive && !excluded && !handledByChild)
                     {
                         string childDir = Path.Combine(directoryPath, name);
-                        totalSize += GetSizeFoldersWinApi(childDir, recursive, ref includePatterns, ref excludePatterns);
+                        totalSize += GetSizeFoldersWinApi(childDir, recursive, includePatterns, excludePatterns);
                     }
                 }
                 while (FileApi.FindNextFileW(hFind, out findData));
@@ -199,7 +219,7 @@ namespace Computer_Maintenance.Model.Models
             return totalSize;
         }
 
-        private unsafe long GetSizeFilesWinApi(string directoryPath, bool recursive, ref List<SearchPattern> includePatterns, ref List<SearchPattern> excludePatterns)
+        private unsafe long GetSizeFilesWinApi(string directoryPath, bool recursive, List<SearchPattern> includePatterns, List<SearchPattern> excludePatterns)
         {
             long totalSize = 0;
             string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
@@ -275,7 +295,7 @@ namespace Computer_Maintenance.Model.Models
                     else if (recursive)
                     {
                         string childDir = Path.Combine(directoryPath, name);
-                        totalSize += GetSizeFilesWinApi(childDir, recursive, ref includePatterns, ref excludePatterns);
+                        totalSize += GetSizeFilesWinApi(childDir, recursive, includePatterns, excludePatterns);
                     }
                 }
                 while (FileApi.FindNextFileW(hFind, out findData));
@@ -283,32 +303,6 @@ namespace Computer_Maintenance.Model.Models
             finally
             {
                 FileApi.FindClose(hFind);
-            }
-
-            return totalSize;
-        }
-
-        private unsafe long GetSizeWinApi(
-                    string path,
-                    ref FilesAndDirectories.SearchTarget searchTarget,
-                    ref FilesAndDirectories.SearchScope searchScope,
-                    ref FilesAndDirectories.DeleteScope deleteScope,
-                    ref List<SearchPattern> includePatterns,
-                    ref List<SearchPattern> excludePatterns)
-        {
-            if (!Directory.Exists(path)) return 0;
-            long totalSize = 0;
-
-            if ((searchTarget & FilesAndDirectories.SearchTarget.Files) != 0)
-            {
-                bool recursive = ((searchScope & FilesAndDirectories.SearchScope.Recursive) != 0);
-                // Всегда запускаем обход — пустой include трактуем как "включать все файлы".
-                totalSize += GetSizeFilesWinApi(path, recursive, ref includePatterns, ref excludePatterns);
-            }
-            if ((searchTarget & FilesAndDirectories.SearchTarget.Directories) != 0)
-            {
-                bool recursive = ((searchScope & FilesAndDirectories.SearchScope.Recursive) != 0);
-                totalSize += GetSizeFoldersWinApi(path, recursive, ref includePatterns, ref excludePatterns);
             }
 
             return totalSize;

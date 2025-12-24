@@ -1,6 +1,7 @@
 ﻿using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Structs;
 using System.Security.Principal;
+using System.Windows.Forms.VisualStyles;
 using static Computer_Maintenance.Model.Enums.FilesAndDirectories;
 
 namespace Computer_Maintenance.Model.Config
@@ -8,26 +9,23 @@ namespace Computer_Maintenance.Model.Config
     public static class CleanupLocations
     {
         private readonly static string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        private readonly static string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
         public static List<CleaningInformation> GetLocationsByDriveType(DriveInfo dInfo, string systemDrive)
         {
-            List<CleaningInformation> locations = new List<CleaningInformation>();
-
             switch (dInfo.DriveType)
             {
                 case DriveType.Fixed:
                     if (string.Equals(dInfo.Name, systemDrive, StringComparison.OrdinalIgnoreCase))
                     {
-                        locations.AddRange(GetLocationsFor_FixedDrive(dInfo, systemDrive));
+                        return GetLocationsFor_FixedDrive(dInfo);
                     }
                     else
-                        locations.AddRange(GetLocationsFor_OtherFixedDrive(dInfo));
-                    break;
+                    {
+                        return GetLocationsFor_OtherFixedDrive(dInfo);
+                    }
+                default:
+                    return new List<CleaningInformation>();
             }
-
-
-            return locations;
         }
         private static List<CleaningInformation> GetLocationsFor_OtherFixedDrive(DriveInfo dInfo)
         {
@@ -36,8 +34,7 @@ namespace Computer_Maintenance.Model.Config
             return locations;
         }
 
-
-        private static List<CleaningInformation> GetLocationsFor_FixedDrive(DriveInfo dInfo, string systemDrive)
+        private static List<CleaningInformation> GetLocationsFor_FixedDrive(DriveInfo dInfo)
         {
             List<CleaningInformation> locations = new List<CleaningInformation>();
 
@@ -58,90 +55,149 @@ namespace Computer_Maintenance.Model.Config
 
             foreach (string browser in browsers)
             {
+                // ================= FIREFOX =================
                 if (browser == "Mozilla Firefox")
                 {
-                    string profilesPath = Path.Combine(appData, "Mozilla", "Firefox", "Profiles");
+                    string profilesRoot = Path.Combine(appData, "Mozilla", "Firefox", "Profiles");
+                    if (!Directory.Exists(profilesRoot))
+                        continue;
 
                     List<SubCleaningInformation> subItems = new List<SubCleaningInformation>();
-                    string[] subFolders = new string[] { "cache2", "cache2/entries", "cache2/doomed", "thumbnails", "jumpListCache", "startupCache" };
-
-                    foreach (string folder in subFolders)
+                    string[] subFolders =
                     {
-                        subItems.Add(new SubCleaningInformation
+                "cache2",
+                "cache2\\entries",
+                "cache2\\doomed",
+                "thumbnails",
+                "jumpListCache",
+                "startupCache"
+            };
+
+                    foreach (string profileDir in Directory.GetDirectories(profilesRoot))
+                    {
+                        foreach (string folder in subFolders)
                         {
-                            SectionName = folder,
-                            TypeCleaning = TypeCleaning.UserBrowserCache,
-                            SearchConfig = new SearchConfiguration
+                            string fullPath = Path.Combine(profileDir, folder);
+                            if (!Directory.Exists(fullPath))
+                                continue;
+
+                            subItems.Add(new SubCleaningInformation
                             {
-                                BasePath = Path.Combine(profilesPath, folder),
-                                SearchTarget = SearchTarget.Files,
-                                SearchScope = SearchScope.Recursive,
-                                DeleteScope = DeleteScope.OnlyFiles,
-                                IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
+                                SectionName = Path.GetFileName(profileDir) + "\\" + folder,
+                                TypeCleaning = TypeCleaning.UserBrowserCache,
+                                SearchConfig = new SearchConfiguration
+                                {
+                                    BasePath = fullPath,
+                                    SearchTarget = SearchTarget.Files,
+                                    SearchScope = SearchScope.Recursive,
+                                    DeleteScope = DeleteScope.OnlyFiles,
+                                    IncludePatterns = new List<SearchPattern>
+                            {
+                                new SearchPattern { IsActive = false }
                             }
-                        });
+                                }
+                            });
+                        }
                     }
 
-                    locations.Add(new CleaningInformation
+                    if (subItems.Count > 0)
                     {
-                        SectionName = browser,
-                        IsSingleItem = false,
-                        SubItems = subItems
-                    });
+                        locations.Add(new CleaningInformation
+                        {
+                            SectionName = browser,
+                            IsSingleItem = false,
+                            SubItems = subItems
+                        });
+                    }
 
                     continue;
                 }
 
+                // ================= CHROMIUM =================
                 string basePath = null;
-                if (browser == "Google Chrome") basePath = Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default");
-                else if (browser == "Yandex Browser") basePath = Path.Combine(localAppData, "Yandex", "YandexBrowser", "User Data", "Default");
-                else if (browser == "Microsoft Edge") basePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default");
+
+                if (browser == "Google Chrome")
+                    basePath = Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default");
+                else if (browser == "Yandex Browser")
+                    basePath = Path.Combine(localAppData, "Yandex", "YandexBrowser", "User Data", "Default");
+                else if (browser == "Microsoft Edge")
+                    basePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default");
+
+                if (string.IsNullOrEmpty(basePath) || !Directory.Exists(basePath))
+                    continue;
 
                 List<SubCleaningInformation> browserSubItems = new List<SubCleaningInformation>();
-                string[] folders = new string[] { "Cache", "Code Cache", "GPUCache", "Service Worker\\CacheStorage", "Sessions", "Storage\\ext" };
+                string[] folders =
+                {
+            "Cache",
+            "Code Cache",
+            "GPUCache",
+            "Service Worker\\CacheStorage",
+            "Sessions",
+            "Storage\\ext"
+        };
 
                 foreach (string folder in folders)
                 {
+                    string fullPath = Path.Combine(basePath, folder);
+                    if (!Directory.Exists(fullPath))
+                        continue;
+
                     browserSubItems.Add(new SubCleaningInformation
                     {
                         SectionName = folder,
                         TypeCleaning = TypeCleaning.UserBrowserCache,
                         SearchConfig = new SearchConfiguration
                         {
-                            BasePath = Path.Combine(basePath, folder),
+                            BasePath = fullPath,
                             SearchTarget = SearchTarget.Files,
                             SearchScope = SearchScope.Recursive,
                             DeleteScope = DeleteScope.OnlyFiles,
-                            IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
+                            IncludePatterns = new List<SearchPattern>
+                    {
+                        new SearchPattern { IsActive = false }
+                    }
                         }
                     });
                 }
 
-                locations.Add(new CleaningInformation
+                if (browserSubItems.Count > 0)
                 {
-                    SectionName = browser,
-                    IsSingleItem = false,
-                    SubItems = browserSubItems
-                });
+                    locations.Add(new CleaningInformation
+                    {
+                        SectionName = browser,
+                        IsSingleItem = false,
+                        SubItems = browserSubItems
+                    });
+                }
             }
 
             return locations;
         }
+
         private static List<string> GetInstalledBrowserCaches(DriveInfo dInfo)
         {
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-            List<string> caches = new List<string>
-            {
-                "Google Chrome",
-                "Yandex Browser",
-                "Microsoft Edge",
-                "Mozilla Firefox"
-            };
+            List<string> caches = new List<string>();
+
+            if (Directory.Exists(Path.Combine(localAppData, "Google", "Chrome")))
+                caches.Add("Google Chrome");
+
+            if (Directory.Exists(Path.Combine(localAppData, "Yandex", "YandexBrowser")))
+                caches.Add("Yandex Browser");
+
+            if (Directory.Exists(Path.Combine(localAppData, "Microsoft", "Edge")))
+                caches.Add("Microsoft Edge");
+
+            if (Directory.Exists(Path.Combine(appData, "Mozilla", "Firefox")))
+                caches.Add("Mozilla Firefox");
 
             return caches;
         }
+
+
 
         private static CleaningInformation GetRecycleBin(DriveInfo dInfo)
         {

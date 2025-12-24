@@ -12,7 +12,7 @@ namespace Computer_Maintenance.Model.Structs
 
         // Если IsSingleItem = true, используем SingleItem
         // Иначе используем SubItems
-        public SubCleaningInformation? SingleItem { get; set; }
+        public SubCleaningInformation? SingleItem { get; set; } = new();
         public List<SubCleaningInformation> SubItems { get; set; } = new(); //Вложенные разделы
     }
 
