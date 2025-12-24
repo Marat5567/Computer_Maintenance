@@ -1,4 +1,4 @@
-﻿using Computer_Maintenance.Model.Enums;
+﻿using Computer_Maintenance.Model.Enums.SystemCleaning;
 
 namespace Computer_Maintenance.Model.Structs
 {

@@ -1,8 +1,6 @@
-﻿using Computer_Maintenance.Model.Enums;
+﻿using Computer_Maintenance.Model.Enums.SystemCleaning;
 using Computer_Maintenance.Model.Structs;
 using System.Security.Principal;
-using System.Windows.Forms.VisualStyles;
-using static Computer_Maintenance.Model.Enums.FilesAndDirectories;
 
 namespace Computer_Maintenance.Model.Config
 {
@@ -65,13 +63,13 @@ namespace Computer_Maintenance.Model.Config
                     List<SubCleaningInformation> subItems = new List<SubCleaningInformation>();
                     string[] subFolders =
                     {
-                "cache2",
-                "cache2\\entries",
-                "cache2\\doomed",
-                "thumbnails",
-                "jumpListCache",
-                "startupCache"
-            };
+                            "cache2",
+                            "cache2\\entries",
+                            "cache2\\doomed",
+                            "thumbnails",
+                            "jumpListCache",
+                            "startupCache"
+                        };
 
                     foreach (string profileDir in Directory.GetDirectories(profilesRoot))
                     {
@@ -81,10 +79,22 @@ namespace Computer_Maintenance.Model.Config
                             if (!Directory.Exists(fullPath))
                                 continue;
 
+                            // назначаем детализированный TypeCleaning для каждого подпункта Firefox
+                            TypeCleaning type = folder switch
+                            {
+                                "cache2" => TypeCleaning.Firefox_Cache2,
+                                "cache2\\entries" => TypeCleaning.Firefox_Cache2_Entries,
+                                "cache2\\doomed" => TypeCleaning.Firefox_Cache2_Doomed,
+                                "thumbnails" => TypeCleaning.Firefox_Thumbnails,
+                                "jumpListCache" => TypeCleaning.Firefox_JumpListCache,
+                                "startupCache" => TypeCleaning.Firefox_StartupCache,
+                                _ => TypeCleaning.UserBrowserCache
+                            };
+
                             subItems.Add(new SubCleaningInformation
                             {
                                 SectionName = Path.GetFileName(profileDir) + "\\" + folder,
-                                TypeCleaning = TypeCleaning.UserBrowserCache,
+                                TypeCleaning = type,
                                 SearchConfig = new SearchConfiguration
                                 {
                                     BasePath = fullPath,
@@ -92,9 +102,9 @@ namespace Computer_Maintenance.Model.Config
                                     SearchScope = SearchScope.Recursive,
                                     DeleteScope = DeleteScope.OnlyFiles,
                                     IncludePatterns = new List<SearchPattern>
-                            {
-                                new SearchPattern { IsActive = false }
-                            }
+                                        {
+                                            new SearchPattern { IsActive = false }
+                                        }
                                 }
                             });
                         }
@@ -127,18 +137,20 @@ namespace Computer_Maintenance.Model.Config
                     continue;
 
                 List<SubCleaningInformation> browserSubItems = new List<SubCleaningInformation>();
-                string[] folders =
-                {
-            "Cache",
-            "Code Cache",
-            "GPUCache",
-            "Service Worker\\CacheStorage",
-            "Sessions",
-            "Storage\\ext"
-        };
+                var folders = new Dictionary<string, TypeCleaning>
+                    {
+                        { "Cache", TypeCleaning.BrowserCache_Cache },
+                        { "Code Cache", TypeCleaning.BrowserCache_CodeCache },
+                        { "GPUCache", TypeCleaning.BrowserCache_GPUCache },
+                        { "Service Worker\\CacheStorage", TypeCleaning.BrowserCache_ServiceWorker_CacheStorage },
+                        { "Sessions", TypeCleaning.BrowserCache_Sessions },
+                        { "Storage\\ext", TypeCleaning.BrowserCache_StorageExt }
+                    };
 
-                foreach (string folder in folders)
+                foreach (var kv in folders)
                 {
+                    string folder = kv.Key;
+                    TypeCleaning type = kv.Value;
                     string fullPath = Path.Combine(basePath, folder);
                     if (!Directory.Exists(fullPath))
                         continue;
@@ -146,17 +158,14 @@ namespace Computer_Maintenance.Model.Config
                     browserSubItems.Add(new SubCleaningInformation
                     {
                         SectionName = folder,
-                        TypeCleaning = TypeCleaning.UserBrowserCache,
+                        TypeCleaning = type,
                         SearchConfig = new SearchConfiguration
                         {
                             BasePath = fullPath,
                             SearchTarget = SearchTarget.Files,
                             SearchScope = SearchScope.Recursive,
                             DeleteScope = DeleteScope.OnlyFiles,
-                            IncludePatterns = new List<SearchPattern>
-                    {
-                        new SearchPattern { IsActive = false }
-                    }
+                            IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
                         }
                     });
                 }
@@ -226,11 +235,11 @@ namespace Computer_Maintenance.Model.Config
         }
         private static string GetRecycleBinPath(DriveInfo dInfo)
         {
-            if (dInfo.DriveFormat.Equals("NTFS", System.StringComparison.OrdinalIgnoreCase))
+            if (dInfo.DriveFormat.Equals("NTFS", StringComparison.OrdinalIgnoreCase))
                 return Path.Combine(dInfo.RootDirectory.FullName, "$Recycle.Bin");
 
-            if (dInfo.DriveFormat.Equals("FAT32", System.StringComparison.OrdinalIgnoreCase) ||
-                dInfo.DriveFormat.Equals("FAT", System.StringComparison.OrdinalIgnoreCase))
+            if (dInfo.DriveFormat.Equals("FAT32", StringComparison.OrdinalIgnoreCase) ||
+                dInfo.DriveFormat.Equals("FAT", StringComparison.OrdinalIgnoreCase))
                 return Path.Combine(dInfo.RootDirectory.FullName, "Recycled");
 
             return Path.Combine(dInfo.RootDirectory.FullName, "$Recycle.Bin");

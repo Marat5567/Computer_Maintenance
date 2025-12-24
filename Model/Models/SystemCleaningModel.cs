@@ -1,6 +1,6 @@
 ﻿using Computer_Maintenance.Core.WinApi;
 using Computer_Maintenance.Model.Config;
-using Computer_Maintenance.Model.Enums;
+using Computer_Maintenance.Model.Enums.SystemCleaning;
 using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
 using System.Text.RegularExpressions;
@@ -14,14 +14,14 @@ namespace Computer_Maintenance.Model.Models
         private Dictionary<string, Regex> _regexCache = new();
 
         //Маска атрибутов для пропуска при сканировании
-        private FileAttributes skipMask =
+        private readonly FileAttributes skipMask =
             FileAttributes.ReparsePoint     // Символические ссылки, junction’ы, точки монтирования (риск зацикливания и выхода за пределы каталога)
           | FileAttributes.Device           // Псевдофайлы устройств (CON, NUL и т.п.), не имеют реального размера
           | FileAttributes.Offline          // Файлы, отсутствующие локально (OneDrive / Remote Storage), реального размера на диске нет
           | FileAttributes.IntegrityStream; // Файлы с контрольными суммами (ReFS / Storage Spaces), возможны ограничения доступа и некорректный подсчёт
 
         ///<summary>
-        ///Метод для получения доступных накопителей
+        ///Получение списка доступных (готовых) локальных накопителей
         ///<summary>
         public List<DriveInfo> GetDrives()
         {
@@ -39,7 +39,7 @@ namespace Computer_Maintenance.Model.Models
         }
 
         ///<summary>
-        ///Метод для получения имени системного диска
+        ///Получение корня системного диска
         ///<summary>
         public string GetSystemDrive()
         {
@@ -47,58 +47,63 @@ namespace Computer_Maintenance.Model.Models
         }
 
         ///<summary>
-        ///Метод для получения информации о чистки для пользователя
+        ///Получение конфигураций очистки для выбранного диска
         ///<summary>
         public List<CleaningInformation> GetLocationsForDrive(DriveInfo dInfo)
         {
             return CleanupLocations.GetLocationsByDriveType(dInfo, GetSystemDrive());
         }
-
         ///<summary>
-        ///Метод для получения размера секции
+        ///Получение размера секции очистки
         ///<summary>
         public StorageSize GetSizeSubSection(SubCleaningInformation subCleaningInformation)
         {
-            long totalSizeBytes = 0;
-            string path = subCleaningInformation.SearchConfig.BasePath;
-            FilesAndDirectories.SearchTarget searchTarget = subCleaningInformation.SearchConfig.SearchTarget;
-            FilesAndDirectories.SearchScope searchScope = subCleaningInformation.SearchConfig.SearchScope;
-            FilesAndDirectories.DeleteScope deleteScope = subCleaningInformation.SearchConfig.DeleteScope;
+            long totalSizeBytes = GetSizeWinApi(subCleaningInformation.SearchConfig.BasePath, 
+                subCleaningInformation.SearchConfig.SearchTarget,
+                subCleaningInformation.SearchConfig.SearchScope, 
+                subCleaningInformation.SearchConfig.DeleteScope, 
+                subCleaningInformation.SearchConfig.IncludePatterns,
+                subCleaningInformation.SearchConfig.ExcludePatterns);
 
-            totalSizeBytes = GetSizeWinApi(path, ref searchTarget, ref searchScope, ref deleteScope, subCleaningInformation.SearchConfig.IncludePatterns, subCleaningInformation.SearchConfig.ExcludePatterns);
             return ConvertSizeService.ConvertSize(totalSizeBytes);
         }
-
-        private unsafe long GetSizeWinApi(
+        /// <summary>
+        ///Центральный метод расчёта размера через WinAPI
+        /// </summary>
+        private long GetSizeWinApi(
                    string path,
-                   ref FilesAndDirectories.SearchTarget searchTarget,
-                   ref FilesAndDirectories.SearchScope searchScope,
-                   ref FilesAndDirectories.DeleteScope deleteScope,
+                   SearchTarget searchTarget,
+                   SearchScope searchScope,
+                   DeleteScope deleteScope,
                    List<SearchPattern> includePatterns,
                    List<SearchPattern> excludePatterns)
         {
             if (!Directory.Exists(path)) return 0;
-            long totalSize = 0;
 
-            if ((searchTarget & FilesAndDirectories.SearchTarget.Files) != 0)
+            long totalSize = 0;
+            bool recursive = ((searchScope & SearchScope.Recursive) != 0);
+
+            if ((searchTarget & SearchTarget.Files) != 0)
             {
-                bool recursive = ((searchScope & FilesAndDirectories.SearchScope.Recursive) != 0);
-                // Всегда запускаем обход — пустой include трактуем как "включать все файлы".
                 totalSize += GetSizeFilesWinApi(path, recursive, includePatterns, excludePatterns);
             }
-            if ((searchTarget & FilesAndDirectories.SearchTarget.Directories) != 0)
+            if ((searchTarget & SearchTarget.Directories) != 0)
             {
-                bool recursive = ((searchScope & FilesAndDirectories.SearchScope.Recursive) != 0);
                 totalSize += GetSizeFoldersWinApi(path, recursive, includePatterns, excludePatterns);
             }
-
             return totalSize;
         }
 
-        private unsafe long GetSizeFoldersWinApi(string directoryPath, bool recursive, List<SearchPattern> includePatterns, List<SearchPattern> excludePatterns)
+        /// <summary>
+        ///Расчёт размера папок (каталогов)
+        /// </summary>
+        private unsafe long GetSizeFoldersWinApi(
+            string directoryPath,
+            bool recursive,
+            List<SearchPattern> includePatterns,
+    List<SearchPattern> excludePatterns)
         {
             long totalSize = 0;
-
             string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
 
             FileApi.WIN32_FIND_DATA findData;
@@ -110,100 +115,54 @@ namespace Computer_Maintenance.Model.Models
                 IntPtr.Zero,
                 FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
 
-            if (hFind == FileApi.INVALID_HANDLE_VALUE) return 0;
+            if (hFind == FileApi.INVALID_HANDLE_VALUE) { return 0; }
 
             try
             {
                 do
                 {
                     if ((findData.dwFileAttributes & (int)skipMask) != 0) { continue; }
+
                     string name = GetFileNamePtr(&findData);
-                    if (name == "." || name == "..") continue;
+                    if (name == "." || name == "..") { continue; }
 
                     bool isDirectory = (findData.dwFileAttributes & (int)FileAttributes.Directory) != 0;
-                    if (!isDirectory)
-                    {
-                        // Нас интересуют только папки в этой функции
-                        continue;
-                    }
+                    if (!isDirectory) { continue; }
 
-                    // Если нет активных include-шаблонов — считать все папки как совпадающие
-                    bool hasActiveInclude = includePatterns != null && includePatterns.Count > 0 && includePatterns.Exists(p => p.IsActive);
-                    bool includeMatched = !hasActiveInclude;
+                    bool includeMatched = MatchInclude(name, includePatterns);
                     bool handledByChild = false;
 
-                    if (hasActiveInclude)
+                    if (includePatterns != null)
                     {
                         for (int i = 0; i < includePatterns.Count; i++)
                         {
-                            SearchPattern p = includePatterns[i];
-                            if (!p.IsActive) continue;
-                            if (IsMatch(name, ref p))
+                            SearchPattern inPattern = includePatterns[i];
+                            if (!inPattern.IsActive) { continue; }
+
+                            if (IsMatch(name, inPattern) && inPattern.ChildConfiguration != null)
                             {
-                                includeMatched = true;
+                                // exclude НЕ должен блокировать child
+                                bool excludedGlobally = MatchExclude(name, excludePatterns);
+                                if (excludedGlobally) { break; }
 
-                                // Обработать child-конфигурацию (если задана)
-                                if (p.ChildConfiguration != null)
-                                {
-                                    // проверить, не исключена ли папка по глобальным excludePatterns
-                                    bool excludedGlobally = false;
-                                    if (excludePatterns != null && excludePatterns.Count > 0)
-                                    {
-                                        for (int exI = 0; exI < excludePatterns.Count; exI++)
-                                        {
-                                            var ex = excludePatterns[exI];
-                                            if (!ex.IsActive) continue;
-                                            if (IsMatch(name, ref ex))
-                                            {
-                                                excludedGlobally = true;
-                                                break;
-                                            }
-                                        }
-                                    }
+                                string childPath = Path.Combine(directoryPath, name);
 
-                                    if (!excludedGlobally)
-                                    {
-                                        string childPath = Path.Combine(directoryPath, name);
+                                totalSize += GetSizeWinApi(
+                                    childPath,
+                                    inPattern.ChildConfiguration.SearchTarget,
+                                    inPattern.ChildConfiguration.SearchScope,
+                                    inPattern.ChildConfiguration.DeleteScope,
+                                    inPattern.ChildConfiguration.IncludePatterns ?? new(),
+                                    inPattern.ChildConfiguration.ExcludePatterns ?? new());
 
-                                        // Подготовим параметры child-конфигурации и вызовем универсальную функцию подсчёта,
-                                        // чтобы корректно обработать и файлы, и директории согласно child-настройкам.
-                                        var childSearchTarget = p.ChildConfiguration.SearchTarget;
-                                        var childSearchScope = p.ChildConfiguration.SearchScope;
-                                        var childDeleteScope = p.ChildConfiguration.DeleteScope;
-                                        List<SearchPattern> includePatternsChild = p.ChildConfiguration.IncludePatterns ?? new List<SearchPattern>();
-                                        List<SearchPattern> excludePatternsChild = p.ChildConfiguration.ExcludePatterns ?? new List<SearchPattern>();
-
-                                        totalSize += GetSizeWinApi(childPath, ref childSearchTarget, ref childSearchScope, ref childDeleteScope, includePatternsChild, excludePatternsChild);
-
-                                        // отметим, что каталог полностью обработан child-конфигурацией —
-                                        // чтобы избежать дальнейшей рекурсивной обработки этим же каталогом
-                                        handledByChild = true;
-                                    }
-                                }
-
+                                handledByChild = true;
                                 break;
                             }
                         }
                     }
 
-                    // Проверить глобальные exclude и при совпадении пропустить дальнейшую обработку (включая рекурсию)
-                    bool excluded = false;
-                    if (includeMatched && excludePatterns != null && excludePatterns.Count > 0)
-                    {
-                        for (int i = 0; i < excludePatterns.Count; i++)
-                        {
-                            SearchPattern ex = excludePatterns[i];
-                            if (!ex.IsActive) continue;
-                            if (IsMatch(name, ref ex))
-                            {
-                                excluded = true;
-                                break;
-                            }
-                        }
-                    }
+                    bool excluded = includeMatched && MatchExclude(name, excludePatterns);
 
-                    // Рекурсивно спускаемся в поддиректории для поиска других совпадающих папок.
-                    // Если каталог уже был обработан child-конфигурацией — пропускаем рекурсию, чтобы не дублировать подсчёт.
                     if (recursive && !excluded && !handledByChild)
                     {
                         string childDir = Path.Combine(directoryPath, name);
@@ -216,10 +175,18 @@ namespace Computer_Maintenance.Model.Models
             {
                 FileApi.FindClose(hFind);
             }
+
             return totalSize;
         }
 
-        private unsafe long GetSizeFilesWinApi(string directoryPath, bool recursive, List<SearchPattern> includePatterns, List<SearchPattern> excludePatterns)
+        /// <summary>
+        /// Расчёт размера файлов
+        /// </summary>
+        private unsafe long GetSizeFilesWinApi(
+            string directoryPath,
+            bool recursive,
+            List<SearchPattern> includePatterns,
+            List<SearchPattern> excludePatterns)
         {
             long totalSize = 0;
             string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
@@ -233,8 +200,7 @@ namespace Computer_Maintenance.Model.Models
                 IntPtr.Zero,
                 FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
 
-
-            if (hFind == FileApi.INVALID_HANDLE_VALUE) return 0;
+            if (hFind == FileApi.INVALID_HANDLE_VALUE) { return 0; }
 
             try
             {
@@ -243,53 +209,19 @@ namespace Computer_Maintenance.Model.Models
                     if ((findData.dwFileAttributes & (int)skipMask) != 0) { continue; }
 
                     string name = GetFileNamePtr(&findData);
-                    if (name == "." || name == "..") continue;
+                    if (name == "." || name == "..") { continue; }
 
                     bool isDirectory = (findData.dwFileAttributes & (int)FileAttributes.Directory) != 0;
-                    long fileSize = ((long)findData.nFileSizeHigh << 32) | (long)findData.nFileSizeLow;
 
                     if (!isDirectory)
                     {
-                        // Если нет активных include-шаблонов — считаем все файлы.
-                        bool hasActiveInclude = includePatterns != null && includePatterns.Count > 0 && includePatterns.Exists(p => p.IsActive);
-                        bool includeMatched = !hasActiveInclude;
+                        long fileSize =
+                            ((long)findData.nFileSizeHigh << 32) |
+                            (long)findData.nFileSizeLow;
 
-                        if (hasActiveInclude)
+                        if (MatchInclude(name, includePatterns) && !MatchExclude(name, excludePatterns))
                         {
-                            for (int i = 0; i < includePatterns.Count; i++)
-                            {
-                                SearchPattern p = includePatterns[i];
-                                if (!p.IsActive) continue;
-                                if (IsMatch(name, ref p))
-                                {
-                                    includeMatched = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (includeMatched)
-                        {
-                            // проверка exclude (только активные исключения)
-                            bool excluded = false;
-                            if (excludePatterns != null && excludePatterns.Count > 0)
-                            {
-                                for (int j = 0; j < excludePatterns.Count; j++)
-                                {
-                                    SearchPattern ex = excludePatterns[j];
-                                    if (!ex.IsActive) continue;
-                                    if (IsMatch(name, ref ex))
-                                    {
-                                        excluded = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (!excluded)
-                            {
-                                totalSize += fileSize;
-                            }
+                            totalSize += fileSize;
                         }
                     }
                     else if (recursive)
@@ -308,6 +240,71 @@ namespace Computer_Maintenance.Model.Models
             return totalSize;
         }
 
+        /// <summary>
+        /// Проверка, подходит ли имя под include-паттерны
+        /// </summary>
+        private bool MatchInclude(string name, List<SearchPattern> patterns)
+        {
+            if (patterns == null || patterns.Count == 0)
+            {
+                return true;
+            }
+
+            bool hasActiveInclude = false;
+
+            for (int i = 0; i < patterns.Count; i++)
+            {
+                if (patterns[i].IsActive)
+                {
+                    hasActiveInclude = true;
+                    break;
+                }
+            }
+
+            if (!hasActiveInclude)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < patterns.Count; i++)
+            {
+                SearchPattern pattern = patterns[i];
+                if (!pattern.IsActive) { continue; }
+
+                if (IsMatch(name, pattern))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Проверка, подпадает ли имя под exclude-паттерны
+        /// </summary>
+        private bool MatchExclude(string name, List<SearchPattern> patterns)
+        {
+            if (patterns == null || patterns.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < patterns.Count; i++)
+            {
+                SearchPattern pattern = patterns[i];
+                if (!pattern.IsActive) { continue; }
+
+                if (IsMatch(name, pattern))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Получение имени файла/каталога из WIN32_FIND_DATA
+        /// </summary>
         private unsafe string GetFileNamePtr(FileApi.WIN32_FIND_DATA* findData)
         {
             char* ptr = findData->cFileName;
@@ -319,25 +316,23 @@ namespace Computer_Maintenance.Model.Models
             return new string(ptr, 0, length);
         }
 
-        private unsafe bool IsMatch(string name, ref SearchPattern pattern)
+        /// <summary>
+        /// Универсальная проверка совпадения имени с паттерном
+        /// </summary>
+        private bool IsMatch(string name, SearchPattern pattern)
         {
             switch (pattern.PatternMatchType)
             {
-                case FilesAndDirectories.PatternMatchType.Exact:
-                    return string.Equals(
-                        name,
-                        pattern.Pattern,
-                        StringComparison.OrdinalIgnoreCase);
+                case PatternMatchType.Exact:
+                    return string.Equals(name, pattern.Pattern, StringComparison.OrdinalIgnoreCase);
 
-                case FilesAndDirectories.PatternMatchType.Contains:
-                    return name.Contains(
-                        pattern.Pattern,
-                        StringComparison.OrdinalIgnoreCase);
+                case PatternMatchType.Contains:
+                    return name.Contains(pattern.Pattern, StringComparison.OrdinalIgnoreCase);
 
-                case FilesAndDirectories.PatternMatchType.Simple:
+                case PatternMatchType.Simple:
                     return MatchWildcard(name, pattern.Pattern);
 
-                case FilesAndDirectories.PatternMatchType.Regex:
+                case PatternMatchType.Regex:
                     return GetRegex(pattern.Pattern).IsMatch(name);
 
                 default:
@@ -345,41 +340,35 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
+        /// <summary>
+        /// Проверка wildcard-маски (*, ?) через кешируемый Regex
+        /// </summary>
         private bool MatchWildcard(string input, string wildcard)
         {
             lock (_regexCacheLock)
             {
                 if (!_regexCache.TryGetValue(wildcard, out var regex))
                 {
-                    string pattern =
-                        "^" + Regex.Escape(wildcard)
-                            .Replace("\\*", ".*")
-                            .Replace("\\?", ".") + "$";
-
-                    regex = new Regex(
-                        pattern,
-                        RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
+                    string pattern = "^" + Regex.Escape(wildcard).Replace("\\*", ".*").Replace("\\?", ".") + "$";
+                    regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
                     _regexCache[wildcard] = regex;
                 }
-
                 return regex.IsMatch(input);
             }
         }
 
+        /// <summary>
+        /// Получение (или создание) Regex из кеша
+        /// </summary>
         private Regex GetRegex(string pattern)
         {
             lock (_regexCacheLock)
             {
                 if (!_regexCache.TryGetValue(pattern, out var regex))
                 {
-                    regex = new Regex(
-                        pattern,
-                        RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
+                    regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
                     _regexCache[pattern] = regex;
                 }
-
                 return regex;
             }
         }

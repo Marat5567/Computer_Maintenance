@@ -11,8 +11,7 @@ namespace Computer_Maintenance.View.Interfaces
         void ShowAvailableDrives(List<DriveInfo> dInfos); //Метод для показа доступных дисков
         List<DriveInfo> GetSelectedDrives(); //Метод для получения выбранных дисков
         List<CleaningInformation> GetSelectedOptions(); //Метод для получения выбранных опций
-        void ShowCheckedDrive(DriveInfo dInfo, List<CleaningInformation> cleaningInformation); //Метод для вывода выбранных дисков
-        void ShowCheckedDriveSafe(DriveInfo dInfo, List<CleaningInformation> cleaningInformation);
+        void ShowCheckedDriveSafe(DriveInfo dInfo, List<CleaningInformation> cleaningInformation); //Метод для безопасного вывода инормации об очистки выбранных дисков
         void ClearInfoDrives(); // Метод для очистки информации о выбранных дисках
     }
 }

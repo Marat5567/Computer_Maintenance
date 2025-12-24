@@ -25,6 +25,10 @@ namespace Computer_Maintenance.Presenters
 
         private void OnLoadDrivesRequested(object sender, EventArgs e)
         {
+            if (_selectedDrives != null && _selectedDrives.Count > 0)
+            {
+                _selectedDrives.Clear();
+            }
             List<DriveInfo> _allDrives = _model.GetDrives();
             _view.ShowAvailableDrives(_allDrives);
         }
