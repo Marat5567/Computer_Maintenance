@@ -40,6 +40,7 @@ namespace Computer_Maintenance.Presenters
             if (_selectedDrives == null || _selectedDrives.Count == 0)
             {
                 ShowInfo("Выберите хотя бы один диск");
+                _view.ClearInfoDrives();
                 return;
             }
             if (_scanClicked)
@@ -109,6 +110,32 @@ namespace Computer_Maintenance.Presenters
             {
                 ShowInfo("Выполните сканирование");
                 return;
+            }
+
+            List<SubCleaningInformation> cleaningInformations = _view.GetSelectedOptions();
+
+            if (cleaningInformations == null || cleaningInformations.Count == 0)
+            {
+                ShowInfo("Нету опция для очистки, выберите опции для очистки");
+                return;
+            }
+
+            DialogResult reult = MessageService.ShowMessage(
+                null, 
+                "Вы уверены что хотите начать очистку?",
+                "Подтверждение",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            switch (reult)
+            {
+                case DialogResult.Yes:
+
+                    break;
+                case DialogResult.No:
+                    break;
+                default:
+                    return;
             }
         }
 

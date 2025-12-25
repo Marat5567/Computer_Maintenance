@@ -1,9 +1,10 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace Computer_Maintenance.Core.WinApi
 {
-    public static class FileApi
+    public static partial class FileApi
     {
         /// <summary>
         /// Enums
@@ -49,43 +50,86 @@ namespace Computer_Maintenance.Core.WinApi
             public Int32 dwReserved1;
             public fixed Char cFileName[260];
             public fixed Char cAlternateFileName[14];
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public readonly string GetFileName()
+            {
+                fixed (char* ptr = cFileName)
+                {
+                    return new string(ptr);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public readonly long GetFileSize()
+            {
+                return ((long)nFileSizeHigh << 32) | nFileSizeLow;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public readonly bool IsDirectory()
+            {
+                return (dwFileAttributes & (int)FileAttributes.Directory) != 0;
+            }
         }
 
         /// <summary>
         /// Коды ошибок
         /// </summary>
-        public const int ERROR_ACCESS_DENIED = 5;
+        public const int ERROR_SUCCESS = 0;
         public const int ERROR_FILE_NOT_FOUND = 2;
-        public const int ERROR_NO_MORE_FILES = 18;
         public const int ERROR_PATH_NOT_FOUND = 3;
+        public const int ERROR_ACCESS_DENIED = 5;
+        public const int ERROR_INVALID_HANDLE = 6;
+        public const int ERROR_SHARING_VIOLATION = 32;
+        public const int ERROR_FILE_EXISTS = 80;
+        public const int ERROR_ALREADY_EXISTS = 183;
+        public const int ERROR_NO_MORE_FILES = 18;
+        public const int ERROR_DIR_NOT_EMPTY = 145;
         public const int INVALID_HANDLE_VALUE = -1;
+
 
         /// <summary>
         /// Функции
         /// </summary>
-        [DllImport("kernel32.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
+        /// 
+
+        [LibraryImport("kernel32.dll", EntryPoint = "FindFirstFileExW", SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]
-        public static extern IntPtr FindFirstFileExW(
+        public static unsafe partial IntPtr FindFirstFileExW(
             [MarshalAs(UnmanagedType.LPWStr)] string lpFileName,
             FINDEX_INFO_LEVELS fInfoLevelId,
-            out WIN32_FIND_DATA lpFindFileData,
+            WIN32_FIND_DATA* lpFindFileData,
             FINDEX_SEARCH_OPS fSearchOp,
             IntPtr lpSearchFilter,
             FINDEX_FLAGS dwAdditionalFlags);
 
 
-        [DllImport("kernel32.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
+        [LibraryImport("kernel32.dll", EntryPoint = "FindNextFileW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         [SuppressUnmanagedCodeSecurity]
-        public static extern bool FindNextFileW(
+        public static unsafe partial bool FindNextFileW(
             IntPtr hFindFile,
-            out WIN32_FIND_DATA lpFindFileData);
-        
+            WIN32_FIND_DATA* lpFindFileData);
 
-        [DllImport("kernel32.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
+
+        [LibraryImport("kernel32.dll", EntryPoint = "FindClose")]
         [return: MarshalAs(UnmanagedType.Bool)]
         [SuppressUnmanagedCodeSecurity]
-        public static extern bool FindClose(
+        public static partial bool FindClose(
          IntPtr hFindFile);
+
+        [LibraryImport("kernel32.dll", EntryPoint = "DeleteFileW")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [SuppressUnmanagedCodeSecurity]
+        public static partial bool DeleteFileW(
+            [MarshalAs(UnmanagedType.LPWStr)] string lpFileName);
+
+
+        [LibraryImport("kernel32.dll", EntryPoint = "RemoveDirectoryW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [SuppressUnmanagedCodeSecurity]
+        public static partial bool RemoveDirectoryW(
+            [MarshalAs(UnmanagedType.LPWStr)] string lpPathName);
     }
 }

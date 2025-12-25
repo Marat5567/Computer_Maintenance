@@ -67,6 +67,15 @@ namespace Computer_Maintenance.Model.Models
 
             return ConvertSizeService.ConvertSize(totalSizeBytes);
         }
+        public void StartDelete (SubCleaningInformation subCleaningInformation)
+        {
+            bool recursive = (subCleaningInformation.SearchConfig.SearchScope & SearchScope.Recursive) != 0;
+
+            if ((subCleaningInformation.SearchConfig.SearchTarget & SearchTarget.Files) != 0)
+            {
+
+            }
+        }
         /// <summary>
         ///Центральный метод расчёта размера через WinAPI
         /// </summary>
@@ -81,7 +90,7 @@ namespace Computer_Maintenance.Model.Models
             if (!Directory.Exists(path)) return 0;
 
             long totalSize = 0;
-            bool recursive = ((searchScope & SearchScope.Recursive) != 0);
+            bool recursive = (searchScope & SearchScope.Recursive) != 0;
 
             if ((searchTarget & SearchTarget.Files) != 0)
             {
@@ -110,7 +119,7 @@ namespace Computer_Maintenance.Model.Models
             IntPtr hFind = FileApi.FindFirstFileExW(
                 searchPath,
                 FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
-                out findData,
+                &findData,
                 FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
                 IntPtr.Zero,
                 FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
@@ -123,10 +132,10 @@ namespace Computer_Maintenance.Model.Models
                 {
                     if ((findData.dwFileAttributes & (int)skipMask) != 0) { continue; }
 
-                    string name = GetFileNamePtr(&findData);
+                    string name = findData.GetFileName();
                     if (name == "." || name == "..") { continue; }
 
-                    bool isDirectory = (findData.dwFileAttributes & (int)FileAttributes.Directory) != 0;
+                    bool isDirectory = findData.IsDirectory();
                     if (!isDirectory) { continue; }
 
                     bool includeMatched = MatchInclude(name, includePatterns);
@@ -169,7 +178,7 @@ namespace Computer_Maintenance.Model.Models
                         totalSize += GetSizeFoldersWinApi(childDir, recursive, includePatterns, excludePatterns);
                     }
                 }
-                while (FileApi.FindNextFileW(hFind, out findData));
+                while (FileApi.FindNextFileW(hFind, &findData));
             }
             finally
             {
@@ -195,7 +204,7 @@ namespace Computer_Maintenance.Model.Models
             IntPtr hFind = FileApi.FindFirstFileExW(
                 searchPath,
                 FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
-                out findData,
+                &findData,
                 FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
                 IntPtr.Zero,
                 FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
@@ -208,20 +217,17 @@ namespace Computer_Maintenance.Model.Models
                 {
                     if ((findData.dwFileAttributes & (int)skipMask) != 0) { continue; }
 
-                    string name = GetFileNamePtr(&findData);
+                    string name = findData.GetFileName();
                     if (name == "." || name == "..") { continue; }
 
-                    bool isDirectory = (findData.dwFileAttributes & (int)FileAttributes.Directory) != 0;
+                    bool isDirectory = findData.IsDirectory();
 
                     if (!isDirectory)
                     {
-                        long fileSize =
-                            ((long)findData.nFileSizeHigh << 32) |
-                            (long)findData.nFileSizeLow;
 
                         if (MatchInclude(name, includePatterns) && !MatchExclude(name, excludePatterns))
                         {
-                            totalSize += fileSize;
+                            totalSize += findData.GetFileSize();
                         }
                     }
                     else if (recursive)
@@ -230,7 +236,7 @@ namespace Computer_Maintenance.Model.Models
                         totalSize += GetSizeFilesWinApi(childDir, recursive, includePatterns, excludePatterns);
                     }
                 }
-                while (FileApi.FindNextFileW(hFind, out findData));
+                while (FileApi.FindNextFileW(hFind, &findData));
             }
             finally
             {
@@ -305,16 +311,6 @@ namespace Computer_Maintenance.Model.Models
         /// <summary>
         /// Получение имени файла/каталога из WIN32_FIND_DATA
         /// </summary>
-        private unsafe string GetFileNamePtr(FileApi.WIN32_FIND_DATA* findData)
-        {
-            char* ptr = findData->cFileName;
-            int length = 0;
-            while (length < 260 && ptr[length] != '\0')
-            {
-                length++;
-            }
-            return new string(ptr, 0, length);
-        }
 
         /// <summary>
         /// Универсальная проверка совпадения имени с паттерном

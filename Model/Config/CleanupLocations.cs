@@ -137,7 +137,7 @@ namespace Computer_Maintenance.Model.Config
                     continue;
 
                 List<SubCleaningInformation> browserSubItems = new List<SubCleaningInformation>();
-                var folders = new Dictionary<string, TypeCleaning>
+                Dictionary<string, TypeCleaning> folders = new Dictionary<string, TypeCleaning>
                     {
                         { "Cache", TypeCleaning.BrowserCache_Cache },
                         { "Code Cache", TypeCleaning.BrowserCache_CodeCache },
