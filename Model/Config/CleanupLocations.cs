@@ -95,6 +95,7 @@ namespace Computer_Maintenance.Model.Config
                             {
                                 SectionName = Path.GetFileName(profileDir) + "\\" + folder,
                                 TypeCleaning = type,
+                                
                                 SearchConfig = new SearchConfiguration
                                 {
                                     BasePath = fullPath,
@@ -259,7 +260,7 @@ namespace Computer_Maintenance.Model.Config
                     SearchConfig = new SearchConfiguration
                     {
                         BasePath = tempPath,
-                        SearchTarget = SearchTarget.Files,
+                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                         SearchScope = SearchScope.Recursive,
                         DeleteScope = DeleteScope.AllContents,
                         IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
@@ -278,6 +279,7 @@ namespace Computer_Maintenance.Model.Config
                 IsSingleItem = false,
                 SubItems = new List<SubCleaningInformation>
                 {
+                    
                     new SubCleaningInformation
                     {
                         SectionName = "Временные файлы Windows",
@@ -285,7 +287,7 @@ namespace Computer_Maintenance.Model.Config
                         SearchConfig = new SearchConfiguration
                         {
                             BasePath = Path.Combine(windowsFolder, "Temp"),
-                            SearchTarget = SearchTarget.Files,
+                            SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                             SearchScope = SearchScope.Recursive,
                             DeleteScope = DeleteScope.AllContents,
                             IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
@@ -315,7 +317,7 @@ namespace Computer_Maintenance.Model.Config
                         SearchConfig = new SearchConfiguration
                         {
                             BasePath = Path.Combine(localAppData, "D3DSCache"),
-                            SearchTarget = SearchTarget.Files,
+                            SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                             SearchScope = SearchScope.Recursive,
                             DeleteScope = DeleteScope.AllContents,
                             IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
@@ -328,7 +330,7 @@ namespace Computer_Maintenance.Model.Config
                         SearchConfig = new SearchConfiguration
                         {
                             BasePath = Path.Combine(windowsFolder, "SoftwareDistribution", "Download"),
-                            SearchTarget = SearchTarget.Files,
+                            SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                             SearchScope = SearchScope.Recursive,
                             DeleteScope = DeleteScope.AllContents,
                             IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
@@ -341,7 +343,7 @@ namespace Computer_Maintenance.Model.Config
                         SearchConfig = new SearchConfiguration
                         {
                             BasePath = Path.Combine(windowsFolder, "SoftwareDistribution", "DataStore", "Logs"),
-                            SearchTarget = SearchTarget.Files,
+                            SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                             SearchScope = SearchScope.Recursive,
                             DeleteScope = DeleteScope.AllContents,
                             IncludePatterns = new List<SearchPattern> { new SearchPattern { IsActive = false } }
@@ -356,6 +358,7 @@ namespace Computer_Maintenance.Model.Config
                             BasePath = Path.Combine(localAppData, "Microsoft", "Windows", "WER"),
                             SearchTarget = SearchTarget.Directories,
                             SearchScope = SearchScope.Recursive,
+                            DeleteScope = DeleteScope.None,
                             IncludePatterns = new List<SearchPattern>
                             {
                                 new SearchPattern
@@ -365,7 +368,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
                                         DeleteScope = DeleteScope.AllContents
                                     }
@@ -377,7 +380,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
                                         DeleteScope = DeleteScope.AllContents
                                     }
@@ -389,7 +392,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
                                         DeleteScope = DeleteScope.AllContents
                                     }
@@ -406,6 +409,7 @@ namespace Computer_Maintenance.Model.Config
                             BasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Windows", "WER"),
                             SearchTarget = SearchTarget.Directories,
                             SearchScope = SearchScope.Recursive,
+                            DeleteScope = DeleteScope.None,
                             IncludePatterns = new List<SearchPattern>
                             {
                                 new SearchPattern
@@ -415,7 +419,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
 
                                         DeleteScope = DeleteScope.AllContents
@@ -428,7 +432,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
                                         DeleteScope = DeleteScope.AllContents
                                     }
@@ -440,7 +444,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
                                         DeleteScope = DeleteScope.AllContents
                                     }
@@ -457,6 +461,7 @@ namespace Computer_Maintenance.Model.Config
                             BasePath = Path.Combine(localAppData, "Packages"),
                             SearchTarget = SearchTarget.Directories,
                             SearchScope = SearchScope.Recursive,
+                            DeleteScope = DeleteScope.None,
                             IncludePatterns = new List<SearchPattern>
                             {
                                 new SearchPattern
@@ -466,7 +471,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
                                         DeleteScope = DeleteScope.AllContents
                                     }
@@ -478,7 +483,7 @@ namespace Computer_Maintenance.Model.Config
                                     PatternMatchType = PatternMatchType.Exact,
                                     ChildConfiguration = new SearchConfiguration
                                     {
-                                        SearchTarget = SearchTarget.Files,
+                                        SearchTarget = SearchTarget.Files | SearchTarget.Directories,
                                         SearchScope = SearchScope.Recursive,
                                         DeleteScope = DeleteScope.AllContents
                                     }
@@ -495,7 +500,7 @@ namespace Computer_Maintenance.Model.Config
                             BasePath = Path.Combine(windowsFolder, "Logs"),
                             SearchTarget = SearchTarget.Directories,
                             SearchScope = SearchScope.CurrentDirectory,
-                            
+                            DeleteScope = DeleteScope.None,
                             IncludePatterns = new List<SearchPattern>
                             {
                                 new SearchPattern
@@ -594,7 +599,7 @@ namespace Computer_Maintenance.Model.Config
                             BasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch"),
                             SearchTarget = SearchTarget.Files,
                             SearchScope = SearchScope.Recursive,
-                            DeleteScope = DeleteScope.AllContents,
+                            DeleteScope = DeleteScope.OnlyFiles,
                             ExcludePatterns = new List<SearchPattern>
                             {
                                 new SearchPattern

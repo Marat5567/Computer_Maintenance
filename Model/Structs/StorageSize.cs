@@ -86,7 +86,7 @@
             }
             return 0;
         }
-        public string GetSizeByType(SizeType type, byte n1 = 0, byte n2 = 0, byte n3 = 0)
+        public string GetSizeByType(SizeType type)
         {
             switch (type)
             {

@@ -34,12 +34,16 @@
             panelScroolable = new Panel();
             buttonRefreshDrives = new Button();
             tableLayoutPanelElementsPosition = new TableLayoutPanel();
+            panelButtons = new Panel();
             buttonStartScan = new Button();
+            buttonStartScanClean = new Button();
             flowLayoutPanelInfoDrives = new FlowLayoutPanel();
+            checkBoxSaveFileDeleteFailLogs = new CheckBox();
             buttonStartClean = new Button();
             label3 = new Label();
             panelScroolable.SuspendLayout();
             tableLayoutPanelElementsPosition.SuspendLayout();
+            panelButtons.SuspendLayout();
             SuspendLayout();
             // 
             // label1
@@ -104,42 +108,76 @@
             tableLayoutPanelElementsPosition.ColumnCount = 1;
             tableLayoutPanelElementsPosition.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanelElementsPosition.Controls.Add(flowLayoutPanelDrives, 0, 0);
-            tableLayoutPanelElementsPosition.Controls.Add(buttonStartScan, 0, 1);
+            tableLayoutPanelElementsPosition.Controls.Add(panelButtons, 0, 1);
             tableLayoutPanelElementsPosition.Controls.Add(flowLayoutPanelInfoDrives, 0, 2);
-            tableLayoutPanelElementsPosition.Controls.Add(buttonStartClean, 0, 3);
+            tableLayoutPanelElementsPosition.Controls.Add(checkBoxSaveFileDeleteFailLogs, 0, 3);
+            tableLayoutPanelElementsPosition.Controls.Add(buttonStartClean, 0, 4);
             tableLayoutPanelElementsPosition.Location = new Point(3, 89);
             tableLayoutPanelElementsPosition.Name = "tableLayoutPanelElementsPosition";
-            tableLayoutPanelElementsPosition.RowCount = 4;
+            tableLayoutPanelElementsPosition.RowCount = 5;
             tableLayoutPanelElementsPosition.RowStyles.Add(new RowStyle());
             tableLayoutPanelElementsPosition.RowStyles.Add(new RowStyle());
             tableLayoutPanelElementsPosition.RowStyles.Add(new RowStyle());
             tableLayoutPanelElementsPosition.RowStyles.Add(new RowStyle());
-            tableLayoutPanelElementsPosition.Size = new Size(885, 104);
+            tableLayoutPanelElementsPosition.RowStyles.Add(new RowStyle());
+            tableLayoutPanelElementsPosition.Size = new Size(885, 143);
             tableLayoutPanelElementsPosition.TabIndex = 5;
+            // 
+            // panelButtons
+            // 
+            panelButtons.AutoSize = true;
+            panelButtons.Controls.Add(buttonStartScan);
+            panelButtons.Controls.Add(buttonStartScanClean);
+            panelButtons.Dock = DockStyle.Fill;
+            panelButtons.Location = new Point(3, 9);
+            panelButtons.Name = "panelButtons";
+            panelButtons.Size = new Size(879, 54);
+            panelButtons.TabIndex = 8;
             // 
             // buttonStartScan
             // 
-            buttonStartScan.Location = new Point(3, 9);
+            buttonStartScan.Location = new Point(156, 1);
             buttonStartScan.Name = "buttonStartScan";
-            buttonStartScan.RightToLeft = RightToLeft.No;
-            buttonStartScan.Size = new Size(150, 40);
-            buttonStartScan.TabIndex = 4;
+            buttonStartScan.Size = new Size(147, 50);
+            buttonStartScan.TabIndex = 7;
             buttonStartScan.Text = "Начать сканирование";
             buttonStartScan.UseVisualStyleBackColor = true;
             buttonStartScan.Click += buttonStartScan_Click;
+            // 
+            // buttonStartScanClean
+            // 
+            buttonStartScanClean.Location = new Point(3, 1);
+            buttonStartScanClean.Name = "buttonStartScanClean";
+            buttonStartScanClean.RightToLeft = RightToLeft.No;
+            buttonStartScanClean.Size = new Size(147, 50);
+            buttonStartScanClean.TabIndex = 4;
+            buttonStartScanClean.Text = "Начать сканирование для очистки";
+            buttonStartScanClean.UseVisualStyleBackColor = true;
+            buttonStartScanClean.Click += buttonStartScanClean_Click;
             // 
             // flowLayoutPanelInfoDrives
             // 
             flowLayoutPanelInfoDrives.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             flowLayoutPanelInfoDrives.AutoSize = true;
-            flowLayoutPanelInfoDrives.Location = new Point(3, 55);
+            flowLayoutPanelInfoDrives.Location = new Point(3, 69);
             flowLayoutPanelInfoDrives.Name = "flowLayoutPanelInfoDrives";
             flowLayoutPanelInfoDrives.Size = new Size(879, 0);
             flowLayoutPanelInfoDrives.TabIndex = 6;
             // 
+            // checkBoxSaveFileDeleteFailLogs
+            // 
+            checkBoxSaveFileDeleteFailLogs.AutoSize = true;
+            checkBoxSaveFileDeleteFailLogs.Location = new Point(3, 75);
+            checkBoxSaveFileDeleteFailLogs.Name = "checkBoxSaveFileDeleteFailLogs";
+            checkBoxSaveFileDeleteFailLogs.Size = new Size(285, 19);
+            checkBoxSaveFileDeleteFailLogs.TabIndex = 7;
+            checkBoxSaveFileDeleteFailLogs.Text = "Сохранить логи ошибок при уадлении файлов";
+            checkBoxSaveFileDeleteFailLogs.UseVisualStyleBackColor = true;
+            checkBoxSaveFileDeleteFailLogs.CheckedChanged += checkBoxSaveFileDeleteFailLogs_CheckedChanged;
+            // 
             // buttonStartClean
             // 
-            buttonStartClean.Location = new Point(3, 61);
+            buttonStartClean.Location = new Point(3, 100);
             buttonStartClean.Name = "buttonStartClean";
             buttonStartClean.Size = new Size(150, 40);
             buttonStartClean.TabIndex = 7;
@@ -168,6 +206,7 @@
             panelScroolable.PerformLayout();
             tableLayoutPanelElementsPosition.ResumeLayout(false);
             tableLayoutPanelElementsPosition.PerformLayout();
+            panelButtons.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -179,10 +218,13 @@
         private Label label2;
         private Panel panelScroolable;
         private Label label3;
-        private Button buttonStartScan;
+        private Button buttonStartScanClean;
         private TableLayoutPanel tableLayoutPanelElementsPosition;
         private FlowLayoutPanel flowLayoutPanelInfoDrives;
         private Button buttonStartClean;
         private Button buttonRefreshDrives;
+        private CheckBox checkBoxSaveFileDeleteFailLogs;
+        private Button buttonStartScan;
+        private Panel panelButtons;
     }
 }

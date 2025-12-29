@@ -3,15 +3,19 @@ using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Enums.SystemCleaning;
 using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+
 
 namespace Computer_Maintenance.Model.Models
 {
 
     public class SystemCleaningModel
     {
-        private readonly object _regexCacheLock = new object(); 
-        private Dictionary<string, Regex> _regexCache = new();
+        private readonly object _regexCacheLock = new object();
+        private Dictionary<string, Regex> _regexCache = new Dictionary<string, Regex>();
+        public List<string> _successfulDeletedFiles = new List<string>();
+        public Dictionary<string, int> _failedDeletedFiles = new Dictionary<string, int>();
 
         //Маска атрибутов для пропуска при сканировании
         private readonly FileAttributes skipMask =
@@ -56,26 +60,311 @@ namespace Computer_Maintenance.Model.Models
         ///<summary>
         ///Получение размера секции очистки
         ///<summary>
+        ///
+
+        public string SaveFileDeleteFailLogs()
+        {
+            if (_failedDeletedFiles.Count > 0)
+            {
+                try
+                {
+                    string pathDirectorySave = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+                    string fullPath = Path.Combine(pathDirectorySave, "Логи_ошибок_уадаления_файлов.txt");
+
+                    if (!Directory.Exists(pathDirectorySave))
+                    {
+                        Directory.CreateDirectory(pathDirectorySave);
+                    }
+
+                    StreamWriter sw = new StreamWriter(fullPath);
+
+                    foreach (KeyValuePair<string, int> keyValuePair in _failedDeletedFiles)
+                    {
+                        switch (keyValuePair.Value)
+                        {
+                            case FileApi.ERROR_ACCESS_DENIED:
+                                sw.WriteLine($"ФАЙЛ/ПАПКА: {keyValuePair.Key}   ОШИБКА: Нет доступа");
+                                break;
+                            case FileApi.ERROR_SHARING_VIOLATION:
+                                sw.WriteLine($"ФАЙЛ/ПАПКА: {keyValuePair.Key}   ОШИБКА: Файл занят процессом");
+                                break;
+                            default:
+                                sw.WriteLine($"ФАЙЛ/ПАПКА: {keyValuePair.Key}   ОШИБКА: Код {keyValuePair.Value}");
+                                break;
+                        }
+                    }
+                    sw.Close();
+                    return fullPath;
+                }
+                catch { }
+            }
+            return String.Empty;
+        }
+
+        //public StorageSize GetSizeDrive(DriveInfo dInfo)
+        //{
+        //    return ConvertSizeService.ConvertSize(dInfo.TotalSize);
+        //}
+
         public StorageSize GetSizeSubSection(SubCleaningInformation subCleaningInformation)
         {
-            long totalSizeBytes = GetSizeWinApi(subCleaningInformation.SearchConfig.BasePath, 
+            long totalSizeBytes = GetSizeWinApi(subCleaningInformation.SearchConfig.BasePath,
                 subCleaningInformation.SearchConfig.SearchTarget,
-                subCleaningInformation.SearchConfig.SearchScope, 
-                subCleaningInformation.SearchConfig.DeleteScope, 
+                subCleaningInformation.SearchConfig.SearchScope,
+                subCleaningInformation.SearchConfig.DeleteScope,
                 subCleaningInformation.SearchConfig.IncludePatterns,
                 subCleaningInformation.SearchConfig.ExcludePatterns);
 
             return ConvertSizeService.ConvertSize(totalSizeBytes);
         }
-        public void StartDelete (SubCleaningInformation subCleaningInformation)
+        public void StartDelete(SubCleaningInformation subCleaningInformation)
         {
-            bool recursive = (subCleaningInformation.SearchConfig.SearchScope & SearchScope.Recursive) != 0;
 
-            if ((subCleaningInformation.SearchConfig.SearchTarget & SearchTarget.Files) != 0)
+            // при первоначальном запуске — это корень секции, не удаляем его как папку
+            StartDeleteWinApi(subCleaningInformation.SearchConfig.BasePath,
+                              subCleaningInformation.SearchConfig.SearchTarget,
+                              subCleaningInformation.SearchConfig.SearchScope,
+                              subCleaningInformation.SearchConfig.DeleteScope,
+                              subCleaningInformation.SearchConfig.IncludePatterns,
+                              subCleaningInformation.SearchConfig.ExcludePatterns,
+                              isRoot: true);
+        }
+
+        // Добавлен флаг isRoot — защищает текущую папку от удаления, если true.
+        private void StartDeleteWinApi(
+                    string path,
+                    SearchTarget searchTarget,
+                    SearchScope searchScope,
+                    DeleteScope deleteScope,
+                    List<SearchPattern> includePatterns,
+                    List<SearchPattern> excludePatterns,
+                    bool isRoot)
+        {
+            if (!Directory.Exists(path)) { return; }
+
+            bool recursive = (searchScope & SearchScope.Recursive) != 0;
+
+            if ((searchTarget & SearchTarget.Files) != 0)
             {
-
+                DeleteFilesWinApi(path, recursive, includePatterns, excludePatterns);
+            }
+            if ((searchTarget & SearchTarget.Directories) != 0)
+            {
+                DeleteFoldersWinApi(path, recursive, deleteScope, includePatterns, excludePatterns, isRoot);
             }
         }
+        private unsafe void DeleteFoldersWinApi(
+    string directoryPath,
+    bool recursive,
+    DeleteScope deleteScope,
+    List<SearchPattern> includePatterns,
+    List<SearchPattern> excludePatterns,
+    bool isRoot)
+        {
+            string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
+
+            FileApi.WIN32_FIND_DATA findData;
+            IntPtr hFind = FileApi.FindFirstFileExW(
+                searchPath,
+                FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
+                &findData,
+                FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+                IntPtr.Zero,
+                FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
+
+            if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) return;
+
+            try
+            {
+                do
+                {
+                    if ((findData.dwFileAttributes & (int)skipMask) != 0) continue;
+
+                    string name = findData.GetFileName();
+                    if (name == "." || name == "..") continue;
+
+                    string childDir = Path.Combine(directoryPath, name);
+
+                    if (!findData.IsDirectory()) continue;
+
+                    bool includeMatched = MatchInclude(name, includePatterns);
+                    bool handledByChild = false;
+
+                    // Обработка ChildConfiguration
+                    if (includePatterns != null)
+                    {
+                        foreach (var pattern in includePatterns)
+                        {
+                            if (!pattern.IsActive) continue;
+
+                            if (IsMatch(name, pattern) && pattern.ChildConfiguration != null)
+                            {
+                                bool excludedGlobally = MatchExclude(name, excludePatterns);
+                                if (excludedGlobally) break;
+
+                                // child — запускаем как корень для child-конфигурации,
+                                // чтобы сам matched каталог не удалялся (он должен оставаться).
+                                StartDeleteWinApi(
+                                    childDir,
+                                    pattern.ChildConfiguration.SearchTarget,
+                                    pattern.ChildConfiguration.SearchScope,
+                                    pattern.ChildConfiguration.DeleteScope,
+                                    pattern.ChildConfiguration.IncludePatterns ?? new(),
+                                    pattern.ChildConfiguration.ExcludePatterns ?? new(),
+                                    isRoot: true);
+
+                                handledByChild = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Рекурсивный вызов для подпапок (обычная рекурсия — это уже не корень)
+                    if (recursive && !handledByChild && !(includeMatched && MatchExclude(name, excludePatterns)))
+                    {
+                        DeleteFoldersWinApi(childDir, recursive, deleteScope, includePatterns, excludePatterns, isRoot: false);
+                    }
+
+                } while (FileApi.FindNextFileW(hFind, &findData));
+            }
+            finally
+            {
+                FileApi.FindClose(hFind);
+            }
+
+            // Удаляем текущую папку после обработки всех вложенных,
+            // но не удаляем корневую директорию вызова (isRoot == true).
+            // Удаляем только если в deleteScope явно указано AllContents.
+            if (isRoot) return;
+
+            if ((deleteScope & DeleteScope.AllContents) == 0) return;
+
+            // Проверяем, остались ли видимые (не пропускаемые) записи в каталоге
+            bool isEmpty = true;
+            string checkSearch = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
+            FileApi.WIN32_FIND_DATA checkData;
+            IntPtr hCheck = FileApi.FindFirstFileExW(
+                checkSearch,
+                FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
+                &checkData,
+                FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+                IntPtr.Zero,
+                FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
+
+            if (hCheck.ToInt64() != FileApi.INVALID_HANDLE_VALUE)
+            {
+                try
+                {
+                    do
+                    {
+                        if ((checkData.dwFileAttributes & (int)skipMask) != 0) continue;
+
+                        string n = checkData.GetFileName();
+                        if (n == "." || n == "..") continue;
+
+                        // найден видимый элемент — не пустая
+                        isEmpty = false;
+                        break;
+                    } while (FileApi.FindNextFileW(hCheck, &checkData));
+                }
+                finally
+                {
+                    FileApi.FindClose(hCheck);
+                }
+            }
+            else
+            {
+                // Не удалось перечислить — не пытаемся удалять
+                return;
+            }
+
+            if (isEmpty && Directory.Exists(directoryPath))
+            {
+                try
+                {
+                    var attrs = File.GetAttributes(directoryPath);
+                    if ((attrs & FileAttributes.ReadOnly) != 0)
+                        File.SetAttributes(directoryPath, attrs & ~FileAttributes.ReadOnly);
+                }
+                catch
+                {
+                    // если не удалось снять атрибут — всё равно попробуем удалить
+                }
+
+                bool removed = FileApi.RemoveDirectoryW(directoryPath);
+            }
+
+        }
+
+
+
+        private unsafe void DeleteFilesWinApi(string directoryPath,
+            bool recursive,
+            List<SearchPattern> includePatterns,
+            List<SearchPattern> excludePatterns)
+        {
+            string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
+
+            FileApi.WIN32_FIND_DATA findData;
+            IntPtr hFind = FileApi.FindFirstFileExW(
+                searchPath,
+                FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
+                &findData,
+                FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+                IntPtr.Zero,
+                FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
+
+            if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { return; }
+
+            try
+            {
+                do
+                {
+                    if ((findData.dwFileAttributes & (int)skipMask) != 0) { continue; }
+
+                    string name = findData.GetFileName();
+                    if (name == "." || name == "..") { continue; }
+
+                    bool isDirectory = findData.IsDirectory();
+
+                    if (!isDirectory)
+                    {
+                        if (MatchInclude(name, includePatterns) && !MatchExclude(name, excludePatterns))
+                        {
+                            string fullPath = Path.Combine(directoryPath, name);
+
+                            if ((findData.dwFileAttributes & (int)FileAttributes.ReadOnly) != 0)
+                            {
+                                FileApi.SetFileAttributesW(fullPath, (uint)(findData.dwFileAttributes & ~(int)FileAttributes.ReadOnly));
+                            }
+
+                            bool deleted = FileApi.DeleteFileW(fullPath);
+
+                            if (deleted)
+                            {
+                                _successfulDeletedFiles.Add(fullPath);
+                            }
+                            else
+                            {
+                                try { _failedDeletedFiles.Add(fullPath, Marshal.GetLastWin32Error()); } catch { }
+                            }
+                        }
+                    }
+                    else if (recursive)
+                    {
+                        string childDir = Path.Combine(directoryPath, name);
+                        DeleteFilesWinApi(childDir, recursive, includePatterns, excludePatterns);
+                    }
+                }
+                while (FileApi.FindNextFileW(hFind, &findData));
+            }
+            finally
+            {
+                FileApi.FindClose(hFind);
+            }
+        }
+
+
         /// <summary>
         ///Центральный метод расчёта размера через WinAPI
         /// </summary>
@@ -124,7 +413,7 @@ namespace Computer_Maintenance.Model.Models
                 IntPtr.Zero,
                 FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
 
-            if (hFind == FileApi.INVALID_HANDLE_VALUE) { return 0; }
+            if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { return 0; }
 
             try
             {
@@ -209,7 +498,7 @@ namespace Computer_Maintenance.Model.Models
                 IntPtr.Zero,
                 FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
 
-            if (hFind == FileApi.INVALID_HANDLE_VALUE) { return 0; }
+            if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { return 0; }
 
             try
             {

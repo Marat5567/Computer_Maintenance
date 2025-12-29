@@ -12,8 +12,11 @@ namespace Computer_Maintenance.Controls
     {
         // События для взаимодействия с контроллером
         public event EventHandler LoadDrivesRequested;   // Запрос на загрузку списка доступных дисков
-        public event EventHandler StartScanClicked;      // Запуск сканирования выбранных дисков
+        public event EventHandler StartScanClicked; // Запуск  сканирования диска
+        public event EventHandler StartScanCleanClicked;      // Запуск сканирования для удаления выбранных дисков
         public event EventHandler StartCleanClicked;     // Запуск очистки выбранных опций
+
+        public bool SaveFileDeleteFail_Logs { get; set; } = false;
 
         private List<DriveInfo> _selectedDrives = new List<DriveInfo>(); //выбранные диски
         private List<SubCleaningInformation> _selectedCleaning = new List<SubCleaningInformation>();
@@ -28,9 +31,9 @@ namespace Computer_Maintenance.Controls
             LoadDrivesRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        private void buttonStartScan_Click(object sender, EventArgs e)
+        private void buttonStartScanClean_Click(object sender, EventArgs e)
         {
-            StartScanClicked?.Invoke(this, EventArgs.Empty);
+            StartScanCleanClicked?.Invoke(this, EventArgs.Empty);
         }
 
         private void buttonStartClean_Click(object sender, EventArgs e)
@@ -38,6 +41,10 @@ namespace Computer_Maintenance.Controls
             StartCleanClicked?.Invoke(this, EventArgs.Empty);
         }
 
+        private void buttonStartScan_Click(object sender, EventArgs e)
+        {
+            StartScanClicked?.Invoke(this, EventArgs.Empty);
+        }
         private void buttonRefreshDrives_Click(object sender, EventArgs e)
         {
             flowLayoutPanelDrives.Controls.Clear();
@@ -47,6 +54,17 @@ namespace Computer_Maintenance.Controls
 
             LoadDrivesRequested.Invoke(this, EventArgs.Empty);
         }
+        private void checkBoxSaveFileDeleteFailLogs_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBoxSaveFileDeleteFailLogs.Checked)
+            {
+                SaveFileDeleteFail_Logs = true;
+            }
+            else
+            {
+                SaveFileDeleteFail_Logs = false;
+            }
+        }
 
         /// <summary>
         /// Получение выбранных пользователем дисков
@@ -54,27 +72,6 @@ namespace Computer_Maintenance.Controls
         public List<DriveInfo> GetSelectedDrives()
         {
             return _selectedDrives;
-            //List<DriveInfo> selectedDrives = new List<DriveInfo>();
-            //foreach (Control panelControl in flowLayoutPanelDrives.Controls)
-            //{
-            //    Panel panelDrive = (panelControl as Panel)!;
-            //    if (panelDrive != null)
-            //    {
-            //        foreach (Control innerControl in panelDrive.Controls)
-            //        {
-            //            CheckBox checkBoxDisk = (innerControl as CheckBox)!;
-            //            if (checkBoxDisk != null && checkBoxDisk.Checked)
-            //            {
-            //                DriveInfo driveInfo = (checkBoxDisk.Tag as DriveInfo)!;
-            //                if (driveInfo != null)
-            //                {
-            //                    selectedDrives.Add(driveInfo);
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
-            //return selectedDrives;
         }
 
         /// <summary>
@@ -85,29 +82,6 @@ namespace Computer_Maintenance.Controls
             return _selectedCleaning;
         }
 
-
-
-
-
-        /*
-         *  List<CleaningInformation> selectedOptions = new List<CleaningInformation>();
-            foreach (Control panelControl in flowLayoutPanelInfoDrives.Controls)
-            {
-                Panel panelInfo = (panelControl as Panel)!;
-                if (panelInfo != null)
-                {
-                    foreach (Control innerControl in panelInfo.Controls)
-                    {
-                        CheckBox checkBoxOption = (innerControl as CheckBox)!;
-                        if (checkBoxOption != null && checkBoxOption.Checked && (checkBoxOption.Tag is CleaningInformation cleaningInfo))
-                        {
-                            selectedOptions.Add(cleaningInfo);
-                        }
-                    }
-                }
-            }
-            return selectedOptions;
-         * */
         /// <summary>
         /// Отображение всех доступных дисков на панели
         /// </summary>
@@ -162,7 +136,7 @@ namespace Computer_Maintenance.Controls
                 Label labelDetails = new Label
                 {
                     ForeColor = ApplicationSettings.TextColor,
-                    Text = $"{free.GetSizeByType(free.GetMaxSizeType(), 1)} свободно из {total.GetSizeByType(total.GetMaxSizeType(), 1)}",
+                    Text = $"{free.GetSizeByType(free.GetMaxSizeType())} свободно из {total.GetSizeByType(total.GetMaxSizeType())}",
                     Location = new Point(10, 65),
                     AutoSize = true
                 };
@@ -173,7 +147,7 @@ namespace Computer_Maintenance.Controls
                     {
                         _selectedDrives.Add(currentDrive);
                     }
-                    else 
+                    else
                     {
                         _selectedDrives.Remove(currentDrive);
                     }
@@ -191,22 +165,103 @@ namespace Computer_Maintenance.Controls
         /// <summary>
         /// Потокобезопасный вызов ShowCheckedDrive
         /// </summary>
-        public void ShowCheckedDriveSafe(DriveInfo dInfo, List<CleaningInformation> cleaningInformation)
+        public void ShowCheckedDriveSafe(DriveInfo dInfo, List<CleaningInformation> cleaningInformation, ShowTypeInfo showTypeInfo)
         {
-            if (this.InvokeRequired)
+            switch (showTypeInfo)
             {
-                this.Invoke(new Action(() => ShowCheckedDrive(dInfo, cleaningInformation)));
+                case ShowTypeInfo.CleaningInfo:
+                    if (this.InvokeRequired)
+                    {
+                        this.Invoke(new Action(() => ShowCheckedDriveForCleaning(dInfo, cleaningInformation)));
+                    }
+                    else
+                    {
+                        ShowCheckedDriveForCleaning(dInfo, cleaningInformation);
+                    }
+                    break;
+                case ShowTypeInfo.SizeInfo:
+                    if (this.InvokeRequired)
+                    {
+                        this.Invoke(new Action(() => ShowCheckedDriveForSizeInfo(dInfo)));
+                    }
+                    else
+                    {
+                        ShowCheckedDriveForSizeInfo(dInfo);
+                    }
+                    break;
+
             }
-            else
+        }
+
+        private void ShowCheckedDriveForSizeInfo(DriveInfo dInfo)
+        {
+            if (dInfo == null) { return; }
+
+
+            long totalBytes = dInfo.TotalSize;
+            long freeBytes = dInfo.TotalFreeSpace;
+            long usedBytes = totalBytes - freeBytes;
+
+            StorageSize total = ConvertSizeService.ConvertSize(totalBytes);
+            StorageSize free = ConvertSizeService.ConvertSize(freeBytes);
+            StorageSize used = ConvertSizeService.ConvertSize(usedBytes);
+
+            int percentUsed = totalBytes > 0 ? (int)((double)usedBytes / totalBytes * 100) : 0;
+
+            FlowLayoutPanel diskPanel = new FlowLayoutPanel
             {
-                ShowCheckedDrive(dInfo, cleaningInformation);
-            }
+                FlowDirection = FlowDirection.TopDown,
+                AutoSize = true,
+            
+                BackColor = ApplicationSettings.BackgroundColor,
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(10),
+            };
+
+            Label diskLabel = new Label
+            {
+                Text = dInfo.DriveType == DriveType.Fixed
+                    ? $"Локальный диск ({dInfo.Name.Replace(":\\", ":")})"
+                    : dInfo.Name.Replace(":\\", ":"),
+
+                Font = new Font(FontFamily.GenericSansSerif, 14, FontStyle.Bold),
+                ForeColor = ApplicationSettings.TextColor,
+                AutoSize = true,
+                Width = 360,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 0, 10)
+            };
+
+            Label driveSpaceInfo = new Label
+            {      
+               
+                ForeColor = ApplicationSettings.TextColor,
+                AutoSize = true,
+                Margin = new Padding(0, 0, 0, 10),
+                Text = $"{free.GetSizeByType(free.GetMaxSizeType())} свободно из {total.GetSizeByType(free.GetMaxSizeType())}"
+            };
+
+            CustomProgressBar progressBar = new CustomProgressBar
+            {
+                BackColor = Color.White,
+                Minimum = 0,
+                Maximum = 100,
+                Value = percentUsed,
+                Size = new Size(220, 18),
+                Style = ProgressBarStyle.Continuous,
+            }; ;
+
+            diskPanel.Controls.Add(diskLabel);
+            diskPanel.Controls.Add(driveSpaceInfo);
+            diskPanel.Controls.Add(progressBar);
+
+            flowLayoutPanelInfoDrives.Controls.Add(diskPanel);
         }
 
         /// <summary>
         /// Отображение выбранного диска и доступных опций очистки
         /// </summary>
-        private void ShowCheckedDrive(DriveInfo dInfo, List<CleaningInformation> cleaningInformation)
+        private void ShowCheckedDriveForCleaning(DriveInfo dInfo, List<CleaningInformation> cleaningInformation)
         {
             if (dInfo == null || cleaningInformation == null) return;
 
@@ -269,26 +324,29 @@ namespace Computer_Maintenance.Controls
             }
 
             FlowLayoutPanel totalSizePanel = new FlowLayoutPanel
-            { 
-                FlowDirection = FlowDirection.LeftToRight, 
-                AutoSize = true, WrapContents = false, 
-                Margin = new Padding(0, 0, 0, 10), 
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                WrapContents = false,
+                Margin = new Padding(0, 0, 0, 10),
                 BackColor = ApplicationSettings.BackgroundColor,
                 Font = new Font(FontFamily.GenericSansSerif, 10,
-                FontStyle.Bold), 
-            }; 
-            Label labelTextAvailableForClear = new Label 
+                FontStyle.Bold),
+            };
+            Label labelTextAvailableForClear = new Label
             {
-                Text = "Доступно для очистки (всего) :", 
-                AutoSize = true, ForeColor = ApplicationSettings.TextColor 
+                Text = "Доступно для очистки (всего) :",
+                AutoSize = true,
+                ForeColor = ApplicationSettings.TextColor
             };
             Label availableForClear = new Label
             {
-                Text = $"[ {totalSize.GetSizeByType(totalSize.GetMaxSizeType(), 2)} ]", 
-                AutoSize = true, ForeColor = totalSize.GetColorBySize(), 
+                Text = $"[ {totalSize.GetSizeByType(totalSize.GetMaxSizeType())} ]",
+                AutoSize = true,
+                ForeColor = totalSize.GetColorBySize(),
             };
-            totalSizePanel.Controls.Add(labelTextAvailableForClear); 
-            totalSizePanel.Controls.Add(availableForClear); 
+            totalSizePanel.Controls.Add(labelTextAvailableForClear);
+            totalSizePanel.Controls.Add(availableForClear);
             diskPanel.Controls.Add(totalSizePanel);
 
             // ===== ОПЦИИ ОЧИСТКИ =====
@@ -314,7 +372,7 @@ namespace Computer_Maintenance.Controls
 
                 Label sizeLabel = new Label
                 {
-                    Text = $"[{cleanInfo.Size.GetSizeByType(cleanInfo.Size.GetMaxSizeType(), 1) ?? "0"}]",
+                    Text = $"[{cleanInfo.Size.GetSizeByType(cleanInfo.Size.GetMaxSizeType()) ?? "0"}]",
                     AutoSize = true,
                     ForeColor = cleanInfo.Size.GetColorBySize(),
                     Margin = new Padding(5, 4, 0, 0)
@@ -344,18 +402,38 @@ namespace Computer_Maintenance.Controls
                     {
                         if (sub == null) continue;
 
+                        FlowLayoutPanel subHeader = new FlowLayoutPanel
+                        {
+                            FlowDirection = FlowDirection.LeftToRight,
+                            AutoSize = true,
+                            WrapContents = false
+                        };
+
                         CheckBox subCheck = new CheckBox
                         {
                             Text = sub.SectionName,
                             AutoSize = true,
-                            ForeColor = ApplicationSettings.TextColor
+                            ForeColor = ApplicationSettings.TextColor,
+                            Margin = new Padding(0, 2, 5, 0)
+                        };
+
+                        Label subSizeLabel = new Label
+                        {
+                            Text = $"[{sub.Size?.GetSizeByType(sub.Size.GetMaxSizeType()) ?? "0"}]",
+                            AutoSize = true,
+                            ForeColor = sub.Size?.GetColorBySize() ?? ApplicationSettings.TextColor,
+                            Margin = new Padding(0, 4, 0, 0)
                         };
 
                         subCheck.CheckedChanged += (_, _) =>
                             SetSubSelected(sub, subCheck.Checked);
 
-                        subContainer.Controls.Add(subCheck);
+                        subHeader.Controls.Add(subCheck);
+                        subHeader.Controls.Add(subSizeLabel);
+
+                        subContainer.Controls.Add(subHeader);
                     }
+
                 }
 
                 mainCheckBox.CheckedChanged += (_, _) =>
@@ -405,5 +483,6 @@ namespace Computer_Maintenance.Controls
         {
             flowLayoutPanelInfoDrives.Controls.Clear();
         }
+
     }
 }

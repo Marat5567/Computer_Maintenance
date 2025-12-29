@@ -1,4 +1,5 @@
 ﻿using Computer_Maintenance.Core.Services;
+using Computer_Maintenance.Model.Enums.SystemCleaning;
 using Computer_Maintenance.Model.Models;
 using Computer_Maintenance.Model.Structs;
 using Computer_Maintenance.View.Interfaces;
@@ -19,7 +20,8 @@ namespace Computer_Maintenance.Presenters
             _model = model;
 
             _view.LoadDrivesRequested += OnLoadDrivesRequested;
-            _view.StartScanClicked += async (s,e) => await OnStartScanAsync(s,e);
+            _view.StartScanCleanClicked += async (s,e) => await OnStartScanCleanAsync(s,e);
+            _view.StartScanClicked += async (s, e) => await OnStartScanAsync(s, e);
             _view.StartCleanClicked += OnStartClean;
         }
 
@@ -30,10 +32,11 @@ namespace Computer_Maintenance.Presenters
                 _selectedDrives.Clear();
             }
             List<DriveInfo> _allDrives = _model.GetDrives();
+            _scanClicked = false;
             _view.ShowAvailableDrives(_allDrives);
         }
 
-        private async Task OnStartScanAsync(object sender, EventArgs e)
+        private async Task OnStartScanCleanAsync(object sender, EventArgs e)
         {
             _selectedDrives = _view.GetSelectedDrives();
 
@@ -99,12 +102,37 @@ namespace Computer_Maintenance.Presenters
                 {
                     ShowError($"Ошибка: {ex.Message}");
                 }
-                _view.ShowCheckedDriveSafe(dInfo, cleaningInformations);
+                _view.ShowCheckedDriveSafe(dInfo, cleaningInformations, ShowTypeInfo.CleaningInfo);
             }
             _scanClicked = false;
         }
 
-        public void OnStartClean(object sender, EventArgs e)
+        private async Task OnStartScanAsync(object sender, EventArgs e)
+        {
+            _selectedDrives = _view.GetSelectedDrives();
+
+            if (_selectedDrives == null || _selectedDrives.Count == 0 || _selectedDrives.Count > 1)
+            {
+                ShowInfo("Выберите только один диск");
+                _view.ClearInfoDrives();
+                return;
+            }
+            if (_scanClicked)
+            {
+                ShowInfo("Дождитесь начатого сканирования");
+                return;
+            }
+            _scanClicked = true;
+            _view.ClearInfoDrives();
+
+            foreach (DriveInfo dInfo in _selectedDrives)
+            {
+                _view.ShowCheckedDriveSafe(dInfo, new List<CleaningInformation>(), ShowTypeInfo.SizeInfo);
+            }
+            _scanClicked = false;
+        }
+
+        private void OnStartClean(object sender, EventArgs e)
         {
             if (_selectedDrives == null || _selectedDrives.Count == 0)
             {
@@ -130,7 +158,25 @@ namespace Computer_Maintenance.Presenters
             switch (reult)
             {
                 case DialogResult.Yes:
+                    _model._successfulDeletedFiles.Clear();
+                    _model._failedDeletedFiles.Clear();
 
+                    foreach (SubCleaningInformation subInf in cleaningInformations)
+                    {
+                        _model.StartDelete(subInf);
+                    }
+
+                    ShowInfo($"Удалось очистить {_model._successfulDeletedFiles.Count} файлов\n" +
+                        $"Не удалось очистить {_model._failedDeletedFiles.Count} файлов");
+
+                    if (_view.SaveFileDeleteFail_Logs)
+                    {
+                        string path = _model.SaveFileDeleteFailLogs();
+                        if (path != String.Empty)
+                        {
+                            ShowInfo($"Файл с логами ошибок при уадлении файлов сохранен по пути: {path}");
+                        }
+                    }
                     break;
                 case DialogResult.No:
                     break;

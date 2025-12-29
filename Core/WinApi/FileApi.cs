@@ -76,17 +76,17 @@ namespace Computer_Maintenance.Core.WinApi
         /// <summary>
         /// Коды ошибок
         /// </summary>
-        public const int ERROR_SUCCESS = 0;
-        public const int ERROR_FILE_NOT_FOUND = 2;
-        public const int ERROR_PATH_NOT_FOUND = 3;
-        public const int ERROR_ACCESS_DENIED = 5;
-        public const int ERROR_INVALID_HANDLE = 6;
-        public const int ERROR_SHARING_VIOLATION = 32;
-        public const int ERROR_FILE_EXISTS = 80;
-        public const int ERROR_ALREADY_EXISTS = 183;
-        public const int ERROR_NO_MORE_FILES = 18;
-        public const int ERROR_DIR_NOT_EMPTY = 145;
-        public const int INVALID_HANDLE_VALUE = -1;
+        public const int ERROR_SUCCESS = 0;                 // Успешно
+        public const int ERROR_FILE_NOT_FOUND = 2;          // Файл не найден
+        public const int ERROR_PATH_NOT_FOUND = 3;          // Путь не найден
+        public const int ERROR_ACCESS_DENIED = 5;           // Нет доступа
+        public const int ERROR_INVALID_HANDLE = 6;          // Неверный дескриптор
+        public const int ERROR_SHARING_VIOLATION = 32;      // Файл занят процессом
+        public const int ERROR_FILE_EXISTS = 80;            // Файл уже существует
+        public const int ERROR_ALREADY_EXISTS = 183;        // Объект уже существует
+        public const int ERROR_NO_MORE_FILES = 18;          // Больше нет файлов
+        public const int ERROR_DIR_NOT_EMPTY = 145;         // Папка не пустая
+        public const int INVALID_HANDLE_VALUE = -1;         // Неверный дескриптор
 
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace Computer_Maintenance.Core.WinApi
         public static partial bool FindClose(
          IntPtr hFindFile);
 
-        [LibraryImport("kernel32.dll", EntryPoint = "DeleteFileW")]
+        [LibraryImport("kernel32.dll", EntryPoint = "DeleteFileW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         [SuppressUnmanagedCodeSecurity]
         public static partial bool DeleteFileW(
@@ -131,5 +131,11 @@ namespace Computer_Maintenance.Core.WinApi
         [SuppressUnmanagedCodeSecurity]
         public static partial bool RemoveDirectoryW(
             [MarshalAs(UnmanagedType.LPWStr)] string lpPathName);
+
+        [LibraryImport("kernel32.dll", SetLastError = true, EntryPoint = "SetFileAttributesW")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool SetFileAttributesW(
+            [MarshalAs(UnmanagedType.LPWStr)] string lpFileName,
+            uint dwFileAttributes);
     }
 }
