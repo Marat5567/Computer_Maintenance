@@ -3,5 +3,6 @@
     public enum FunctionalityType
     {
         SystemCleaning,
+        StartupManagement
     }
 }

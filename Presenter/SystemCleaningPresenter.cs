@@ -19,6 +19,7 @@ namespace Computer_Maintenance.Presenters
             _view = view;
             _model = model;
 
+            _view.DirectoryPath += OnChangeDirectory;
             _view.LoadDrivesRequested += OnLoadDrivesRequested;
             _view.StartScanCleanClicked += async (s,e) => await OnStartScanCleanAsync(s,e);
             _view.StartScanClicked += async (s, e) => await OnStartScanAsync(s, e);
@@ -127,7 +128,11 @@ namespace Computer_Maintenance.Presenters
 
             foreach (DriveInfo dInfo in _selectedDrives)
             {
-                _view.ShowCheckedDriveSafe(dInfo, new List<CleaningInformation>(), ShowTypeInfo.SizeInfo);
+                List<DirectoryContents> directoryContents = new List<DirectoryContents>();
+                directoryContents = _model.GetDirectoryContents(dInfo.Name);
+
+                _view.ShowCheckedDriveForSizeInfo(directoryContents);
+
             }
             _scanClicked = false;
         }
@@ -182,6 +187,17 @@ namespace Computer_Maintenance.Presenters
                     break;
                 default:
                     return;
+            }
+        }
+
+        private void OnChangeDirectory(object sender, EventArgs e)
+        {
+            if (_view.DirectoryPath != String.Empty)
+            {
+                List<DirectoryContents> directoryContents = new List<DirectoryContents>();
+                directoryContents = _model.GetDirectoryContents( _view.DirectoryPath);
+
+                _view.ShowCheckedDriveForSizeInfo(directoryContents);
             }
         }
 

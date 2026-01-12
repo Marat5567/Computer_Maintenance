@@ -1,6 +1,7 @@
 ﻿using Computer_Maintenance.Controls;
 using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Models;
+using Computer_Maintenance.View.Controls;
 using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Presenters
@@ -13,6 +14,8 @@ namespace Computer_Maintenance.Presenters
         private SystemCleaningControl _systemCleaningControl;
         private SystemCleaningModel _systemCleaningControlModel;
         private SystemCleaningPresenter _systemCleaningControlPresenter;
+
+        private StartupManagementControl _startupManagementControl;
         public HomePresenter(IHomeView homeControlView, HomeModel homeControlModel)
         {
             _homeControlView = homeControlView;
@@ -31,6 +34,9 @@ namespace Computer_Maintenance.Presenters
                     case FunctionalityType.SystemCleaning:
                         _homeControlView.SetFunctionalityControl(_systemCleaningControl);
                         break;
+                    case FunctionalityType.StartupManagement:
+                        _homeControlView.SetFunctionalityControl(_startupManagementControl);
+                        break;
                 }
             }
         }
@@ -39,6 +45,8 @@ namespace Computer_Maintenance.Presenters
             _systemCleaningControl = new SystemCleaningControl();
             _systemCleaningControlModel = new SystemCleaningModel();
             _systemCleaningControlPresenter = new SystemCleaningPresenter(_systemCleaningControl, _systemCleaningControlModel);
+
+            _startupManagementControl = new StartupManagementControl();
         }
     }
 }

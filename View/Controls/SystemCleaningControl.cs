@@ -17,6 +17,7 @@ namespace Computer_Maintenance.Controls
         public event EventHandler StartCleanClicked;     // Запуск очистки выбранных опций
 
         public bool SaveFileDeleteFail_Logs { get; set; } = false;
+        public string DirectoryPath { get; set; }
 
         private List<DriveInfo> _selectedDrives = new List<DriveInfo>(); //выбранные диски
         private List<SubCleaningInformation> _selectedCleaning = new List<SubCleaningInformation>();
@@ -97,9 +98,9 @@ namespace Computer_Maintenance.Controls
                 long freeBytes = dInfos[i].TotalFreeSpace;
                 long usedBytes = totalBytes - freeBytes;
 
-                StorageSize total = ConvertSizeService.ConvertSize(totalBytes);
-                StorageSize free = ConvertSizeService.ConvertSize(freeBytes);
-                StorageSize used = ConvertSizeService.ConvertSize(usedBytes);
+                StorageSize total = ConvertSizeService.ConvertSize((ulong)totalBytes);
+                StorageSize free = ConvertSizeService.ConvertSize((ulong)freeBytes);
+                StorageSize used = ConvertSizeService.ConvertSize((ulong)usedBytes);
 
                 int percentUsed = totalBytes > 0 ? (int)((double)usedBytes / totalBytes * 100) : 0;
 
@@ -182,81 +183,177 @@ namespace Computer_Maintenance.Controls
                 case ShowTypeInfo.SizeInfo:
                     if (this.InvokeRequired)
                     {
-                        this.Invoke(new Action(() => ShowCheckedDriveForSizeInfo(dInfo)));
+                        //this.Invoke(new Action(() => ShowCheckedDriveForSizeInfo(dInfo)));
                     }
                     else
                     {
-                        ShowCheckedDriveForSizeInfo(dInfo);
+                        //ShowCheckedDriveForSizeInfo(dInfo);
                     }
                     break;
 
             }
         }
 
-        private void ShowCheckedDriveForSizeInfo(DriveInfo dInfo)
+        public void ShowCheckedDriveForSizeInfo(List<DirectoryContents> directoryContents)
         {
-            if (dInfo == null) { return; }
+            if (directoryContents == null || directoryContents.Count == 0) { return; }
 
+            flowLayoutPanelInfoDrives.Controls.Clear();
+            flowLayoutPanelInfoDrives.Dock = DockStyle.Fill;
 
-            long totalBytes = dInfo.TotalSize;
-            long freeBytes = dInfo.TotalFreeSpace;
-            long usedBytes = totalBytes - freeBytes;
-
-            StorageSize total = ConvertSizeService.ConvertSize(totalBytes);
-            StorageSize free = ConvertSizeService.ConvertSize(freeBytes);
-            StorageSize used = ConvertSizeService.ConvertSize(usedBytes);
-
-            int percentUsed = totalBytes > 0 ? (int)((double)usedBytes / totalBytes * 100) : 0;
-
-            FlowLayoutPanel diskPanel = new FlowLayoutPanel
+            Panel container = new Panel
             {
-                FlowDirection = FlowDirection.TopDown,
-                AutoSize = true,
-            
+                Height = 500,
+                Width = flowLayoutPanelInfoDrives.ClientSize.Width,
+                Name = "resizableContainer"
+            };
+
+            SplitContainer splitContainer = new SplitContainer
+            {
+                SplitterWidth = 10,
+                Dock = DockStyle.Fill,
+                SplitterDistance = 500,
+                FixedPanel = FixedPanel.None,
+            };
+
+            splitContainer.Panel2Collapsed = false;
+            splitContainer.Panel2MinSize = 0;
+
+            ListView listView = new ListView
+            {
                 BackColor = ApplicationSettings.BackgroundColor,
-                BorderStyle = BorderStyle.FixedSingle,
-                Padding = new Padding(10),
-            };
-
-            Label diskLabel = new Label
-            {
-                Text = dInfo.DriveType == DriveType.Fixed
-                    ? $"Локальный диск ({dInfo.Name.Replace(":\\", ":")})"
-                    : dInfo.Name.Replace(":\\", ":"),
-
-                Font = new Font(FontFamily.GenericSansSerif, 14, FontStyle.Bold),
                 ForeColor = ApplicationSettings.TextColor,
-                AutoSize = true,
-                Width = 360,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 0, 0, 10)
+                Scrollable = true,
+                Dock = DockStyle.Fill,
+                View = System.Windows.Forms.View.Details,
+                FullRowSelect = true
             };
 
-            Label driveSpaceInfo = new Label
-            {      
-               
-                ForeColor = ApplicationSettings.TextColor,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 10),
-                Text = $"{free.GetSizeByType(free.GetMaxSizeType())} свободно из {total.GetSizeByType(free.GetMaxSizeType())}"
-            };
-
-            CustomProgressBar progressBar = new CustomProgressBar
+            ImageList imageList = new ImageList
             {
-                BackColor = Color.White,
-                Minimum = 0,
-                Maximum = 100,
-                Value = percentUsed,
-                Size = new Size(220, 18),
-                Style = ProgressBarStyle.Continuous,
-            }; ;
+                ImageSize = new Size(18, 18),
+                ColorDepth = ColorDepth.Depth32Bit,
+            };
 
-            diskPanel.Controls.Add(diskLabel);
-            diskPanel.Controls.Add(driveSpaceInfo);
-            diskPanel.Controls.Add(progressBar);
+            listView.SmallImageList = imageList;
+            listView.Columns.Add("", 28, HorizontalAlignment.Center);
+            listView.Columns.Add("Имя", 200, HorizontalAlignment.Left);
+            listView.Columns.Add("Размер", 100, HorizontalAlignment.Right);
+            listView.Columns.Add("Полный путь", 250, HorizontalAlignment.Left);
 
-            flowLayoutPanelInfoDrives.Controls.Add(diskPanel);
+            int iconIndex = 0;
+            listView.BeginUpdate();
+            foreach (DirectoryContents content in directoryContents)
+            {
+                if (content.Icon != null)
+                {
+                    imageList.Images.Add(content.Icon);
+                }
+
+                StorageSize size = ConvertSizeService.ConvertSize(content.Size);
+                
+                ListViewItem item = new ListViewItem("", iconIndex);
+                item.SubItems.Add(content.Name);
+                item.SubItems.Add($"{size.GetSizeByType(size.GetMaxSizeType())}");
+                item.SubItems.Add(content.FullPath);
+                item.Tag = content.FullPath;
+                listView.Items.Add(item);
+                iconIndex++;
+            }
+            listView.EndUpdate();
+
+            listView.ColumnWidthChanging += OnColumnWidthChanging;
+
+            splitContainer.Panel1.Controls.Add(listView);
+            container.Controls.Add(splitContainer);
+
+            flowLayoutPanelInfoDrives.Controls.Add(container);
+
+            flowLayoutPanelInfoDrives.SizeChanged += FlowLayoutPanel_SizeChanged;
+
+            void OnColumnWidthChanging(object sender, ColumnWidthChangingEventArgs e)
+            {
+                if (e.ColumnIndex == 0)
+                {
+                    e.Cancel = true;
+                    e.NewWidth = listView.Columns[e.ColumnIndex].Width;
+                }
+            }
+
+            void FlowLayoutPanel_SizeChanged(object sender, EventArgs e)
+            {
+                if (container != null && !container.IsDisposed)
+                {
+                    container.Width = flowLayoutPanelInfoDrives.ClientSize.Width;
+                    container.Height = Math.Max(500, flowLayoutPanelInfoDrives.ClientSize.Height - 20);
+                }
+            }
+
+            FlowLayoutPanel_SizeChanged(null, EventArgs.Empty);
         }
+        //private void ShowCheckedDriveForSizeInfo(DriveInfo dInfo)
+        //{
+        //    if (dInfo == null) { return; }
+
+        //    long totalBytes = dInfo.TotalSize;
+        //    long freeBytes = dInfo.TotalFreeSpace;
+        //    long usedBytes = totalBytes - freeBytes;
+
+        //    StorageSize total = ConvertSizeService.ConvertSize(totalBytes);
+        //    StorageSize free = ConvertSizeService.ConvertSize(freeBytes);
+        //    StorageSize used = ConvertSizeService.ConvertSize(usedBytes);
+
+        //    int percentUsed = totalBytes > 0 ? (int)((double)usedBytes / totalBytes * 100) : 0;
+
+        //    FlowLayoutPanel diskPanel = new FlowLayoutPanel
+        //    {
+        //        FlowDirection = FlowDirection.TopDown,
+        //        AutoSize = true,
+
+        //        BackColor = ApplicationSettings.BackgroundColor,
+        //        BorderStyle = BorderStyle.FixedSingle,
+        //        Padding = new Padding(10),
+        //    };
+
+        //    Label diskLabel = new Label
+        //    {
+        //        Text = dInfo.DriveType == DriveType.Fixed
+        //            ? $"Локальный диск ({dInfo.Name.Replace(":\\", ":")})"
+        //            : dInfo.Name.Replace(":\\", ":"),
+
+        //        Font = new Font(FontFamily.GenericSansSerif, 14, FontStyle.Bold),
+        //        ForeColor = ApplicationSettings.TextColor,
+        //        AutoSize = true,
+        //        Width = 360,
+        //        TextAlign = ContentAlignment.MiddleCenter,
+        //        Margin = new Padding(0, 0, 0, 10)
+        //    };
+
+        //    Label driveSpaceInfo = new Label
+        //    {      
+
+        //        ForeColor = ApplicationSettings.TextColor,
+        //        AutoSize = true,
+        //        Margin = new Padding(0, 0, 0, 10),
+        //        Text = $"{free.GetSizeByType(free.GetMaxSizeType())} свободно из {total.GetSizeByType(free.GetMaxSizeType())}"
+        //    };
+
+        //    CustomProgressBar progressBar = new CustomProgressBar
+        //    {
+        //        BackColor = Color.White,
+        //        Minimum = 0,
+        //        Maximum = 100,
+        //        Value = percentUsed,
+        //        Size = new Size(220, 18),
+        //        Style = ProgressBarStyle.Continuous,
+        //    }; ;
+
+        //    diskPanel.Controls.Add(diskLabel);
+        //    diskPanel.Controls.Add(driveSpaceInfo);
+        //    diskPanel.Controls.Add(progressBar);
+
+        //    flowLayoutPanelInfoDrives.Controls.Add(diskPanel);
+        //}
 
         /// <summary>
         /// Отображение выбранного диска и доступных опций очистки
@@ -472,10 +569,6 @@ namespace Computer_Maintenance.Controls
 
             flowLayoutPanelInfoDrives.Controls.Add(diskPanel);
         }
-
-
-
-
         /// <summary>
         /// Очистка панели с информацией о дисках
         /// </summary>

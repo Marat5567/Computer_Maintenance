@@ -18,7 +18,7 @@ namespace Computer_Maintenance.Model.Structs
 
     public class SubCleaningInformation
     {
-        public string SectionName { get; set; } = String.Empty; // Имя основного раздела
+        public string SectionName { get; set; } = String.Empty; // Имя основного раздела6
         public TypeCleaning TypeCleaning { get; set; } // Тип очистки для выбора метода очистки
         public SearchConfiguration SearchConfig { get; set; } = new(); // Кофигурация поиска
         public StorageSize Size { get; set; } //Размер раздела

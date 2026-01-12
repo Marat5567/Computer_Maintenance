@@ -3,6 +3,7 @@ using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Enums.SystemCleaning;
 using Computer_Maintenance.Model.Services;
 using Computer_Maintenance.Model.Structs;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -101,14 +102,68 @@ namespace Computer_Maintenance.Model.Models
             return String.Empty;
         }
 
-        //public StorageSize GetSizeDrive(DriveInfo dInfo)
-        //{
-        //    return ConvertSizeService.ConvertSize(dInfo.TotalSize);
-        //}
+        public unsafe List<DirectoryContents> GetDirectoryContents(string directoryPath)
+        {
+            if (directoryPath == null || !Directory.Exists(directoryPath)) { return new List<DirectoryContents>(); }
+
+            List<DirectoryContents> directoryContents = new List<DirectoryContents>();
+
+            string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
+
+            FileApi.WIN32_FIND_DATA findData;
+            IntPtr hFind = FileApi.FindFirstFileExW(
+                searchPath,
+                FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
+                &findData,
+                FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+                IntPtr.Zero,
+                FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
+
+            if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { return new List<DirectoryContents>(); }
+
+            try
+            {
+                do
+                {
+
+                    string name = findData.GetFileName();
+                    if (name == "." || name == "..") { continue; }
+
+                    string fullPath = Path.Combine(directoryPath, name);
+
+                    DirectoryContents contents = new DirectoryContents
+                    {
+                        FullPath = fullPath,
+                        Name = name,
+                        Size = findData.GetFileSize(),
+                        IsDirectory = findData.IsDirectory()
+                    };
+
+                    if (!contents.IsDirectory)
+                    {
+                        contents.Icon = Icon.ExtractAssociatedIcon(fullPath);
+                    }
+                    else
+                    {
+                        contents.Icon = Resource.FolderIcon;
+                    }
+
+                    directoryContents.Add(contents);
+
+                }
+                while (FileApi.FindNextFileW(hFind, &findData));
+            }
+            finally
+            {
+                FileApi.FindClose(hFind);
+            }
+
+            return directoryContents;
+        }
 
         public StorageSize GetSizeSubSection(SubCleaningInformation subCleaningInformation)
         {
-            long totalSizeBytes = GetSizeWinApi(subCleaningInformation.SearchConfig.BasePath,
+            ulong totalSizeBytes = GetSizeWinApi(subCleaningInformation.SearchConfig.BasePath,
                 subCleaningInformation.SearchConfig.SearchTarget,
                 subCleaningInformation.SearchConfig.SearchScope,
                 subCleaningInformation.SearchConfig.DeleteScope,
@@ -368,7 +423,7 @@ namespace Computer_Maintenance.Model.Models
         /// <summary>
         ///Центральный метод расчёта размера через WinAPI
         /// </summary>
-        private long GetSizeWinApi(
+        private ulong GetSizeWinApi(
                    string path,
                    SearchTarget searchTarget,
                    SearchScope searchScope,
@@ -378,7 +433,7 @@ namespace Computer_Maintenance.Model.Models
         {
             if (!Directory.Exists(path)) return 0;
 
-            long totalSize = 0;
+            ulong totalSize = 0;
             bool recursive = (searchScope & SearchScope.Recursive) != 0;
 
             if ((searchTarget & SearchTarget.Files) != 0)
@@ -395,13 +450,13 @@ namespace Computer_Maintenance.Model.Models
         /// <summary>
         ///Расчёт размера папок (каталогов)
         /// </summary>
-        private unsafe long GetSizeFoldersWinApi(
+        private unsafe ulong GetSizeFoldersWinApi(
             string directoryPath,
             bool recursive,
             List<SearchPattern> includePatterns,
     List<SearchPattern> excludePatterns)
         {
-            long totalSize = 0;
+            ulong totalSize = 0;
             string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
 
             FileApi.WIN32_FIND_DATA findData;
@@ -480,13 +535,13 @@ namespace Computer_Maintenance.Model.Models
         /// <summary>
         /// Расчёт размера файлов
         /// </summary>
-        private unsafe long GetSizeFilesWinApi(
+        private unsafe ulong GetSizeFilesWinApi(
             string directoryPath,
             bool recursive,
             List<SearchPattern> includePatterns,
             List<SearchPattern> excludePatterns)
         {
-            long totalSize = 0;
+            ulong totalSize = 0;
             string searchPath = directoryPath.EndsWith("\\") ? directoryPath + "*" : directoryPath + "\\*";
 
             FileApi.WIN32_FIND_DATA findData;

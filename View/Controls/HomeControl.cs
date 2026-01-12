@@ -25,10 +25,14 @@ namespace Computer_Maintenance.Controls
 
             treeViewListFunctionality.BeginUpdate();
             TreeNode cleaningNode = new TreeNode("Очистка системы");
-            cleaningNode.Tag = FunctionalityType.SystemCleaning;
+            TreeNode startupNode = new TreeNode("Управление автозагрузкой");
 
+            cleaningNode.Tag = FunctionalityType.SystemCleaning;
+            startupNode.Tag = FunctionalityType.StartupManagement;
 
             treeViewListFunctionality.Nodes.Add(cleaningNode);
+            treeViewListFunctionality.Nodes.Add(startupNode);
+
             treeViewListFunctionality.EndUpdate();
         }
         private void treeViewListFunctionality_AfterSelect(object sender, TreeViewEventArgs e)

@@ -56,15 +56,19 @@ namespace Computer_Maintenance.Core.WinApi
             {
                 fixed (char* ptr = cFileName)
                 {
-                    return new string(ptr);
+                    int len = 0;
+                    while (len < 260 && ptr[len] != '\0') len++;
+                    return new string(ptr, 0, len);
                 }
             }
 
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public readonly long GetFileSize()
+            public readonly ulong GetFileSize()
             {
-                return ((long)nFileSizeHigh << 32) | nFileSizeLow;
+                return ((ulong)(uint)nFileSizeHigh << 32) | (uint)nFileSizeLow;
             }
+
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public readonly bool IsDirectory()

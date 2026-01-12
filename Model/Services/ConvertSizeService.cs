@@ -4,10 +4,10 @@ namespace Computer_Maintenance.Model.Services
 {
     public static class ConvertSizeService
     {
-        public static StorageSize ConvertSize(long size)
+        public static StorageSize ConvertSize(ulong size)
         {
             StorageSize storageSize = new StorageSize();
-            ulong remainingBytes = (ulong)size;
+            ulong remainingBytes = size;
 
             // TB (1 TB = 1024 GB = 1024 * 1024 * 1024 * 1024 байт)
             storageSize.TB = (uint)(remainingBytes / (1024UL * 1024 * 1024 * 1024));
