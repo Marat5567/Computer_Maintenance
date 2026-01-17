@@ -1,7 +1,7 @@
 ﻿using Computer_Maintenance.Core.Services;
 using Computer_Maintenance.Model.Enums.SystemCleaning;
 using Computer_Maintenance.Model.Models;
-using Computer_Maintenance.Model.Structs;
+using Computer_Maintenance.Model.Structs.SystemCleaning;
 using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Presenters

@@ -1,4 +1,4 @@
-﻿namespace Computer_Maintenance.Model.Structs
+﻿namespace Computer_Maintenance.Model.Structs.SystemCleaning
 {
     public class DirectoryContents
     {

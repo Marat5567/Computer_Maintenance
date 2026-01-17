@@ -1,6 +1,7 @@
-﻿namespace Computer_Maintenance.View.Controls
+﻿using Computer_Maintenance.View.Interfaces;
+namespace Computer_Maintenance.View.Controls
 {
-    public partial class StartupManagementControl : UserControl
+    public partial class StartupManagementControl : UserControl, IStartupManagementView
     {
         public StartupManagementControl()
         {

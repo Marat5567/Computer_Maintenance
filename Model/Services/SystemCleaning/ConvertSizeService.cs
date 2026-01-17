@@ -1,6 +1,6 @@
-﻿using Computer_Maintenance.Model.Structs;
+﻿using Computer_Maintenance.Model.Structs.SystemCleaning;
 
-namespace Computer_Maintenance.Model.Services
+namespace Computer_Maintenance.Model.Services.SystemCleaning
 {
     public static class ConvertSizeService
     {

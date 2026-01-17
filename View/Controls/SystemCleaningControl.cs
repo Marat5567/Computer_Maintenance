@@ -2,8 +2,8 @@
 using Computer_Maintenance.CustomControl;
 using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Enums.SystemCleaning;
-using Computer_Maintenance.Model.Services;
-using Computer_Maintenance.Model.Structs;
+using Computer_Maintenance.Model.Services.SystemCleaning;
+using Computer_Maintenance.Model.Structs.SystemCleaning;
 using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Controls

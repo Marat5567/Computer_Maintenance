@@ -1,5 +1,5 @@
 ﻿using Computer_Maintenance.Model.Enums.SystemCleaning;
-using Computer_Maintenance.Model.Structs;
+using Computer_Maintenance.Model.Structs.SystemCleaning;
 using System.Security.Principal;
 
 namespace Computer_Maintenance.Model.Config

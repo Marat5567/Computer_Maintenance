@@ -1,5 +1,5 @@
 ﻿using Computer_Maintenance.Model.Enums.SystemCleaning;
-namespace Computer_Maintenance.Model.Structs
+namespace Computer_Maintenance.Model.Structs.SystemCleaning
 {
     public class SearchConfiguration
     {

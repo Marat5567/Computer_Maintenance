@@ -1,6 +1,7 @@
 ﻿using Computer_Maintenance.Controls;
 using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Models;
+using Computer_Maintenance.Presenter;
 using Computer_Maintenance.View.Controls;
 using Computer_Maintenance.View.Interfaces;
 
@@ -16,6 +17,8 @@ namespace Computer_Maintenance.Presenters
         private SystemCleaningPresenter _systemCleaningControlPresenter;
 
         private StartupManagementControl _startupManagementControl;
+        private StartupManagementModel _startupManagementModel;
+        private StartupManagementPresenter _startupManagementPresenter;
         public HomePresenter(IHomeView homeControlView, HomeModel homeControlModel)
         {
             _homeControlView = homeControlView;
@@ -47,6 +50,8 @@ namespace Computer_Maintenance.Presenters
             _systemCleaningControlPresenter = new SystemCleaningPresenter(_systemCleaningControl, _systemCleaningControlModel);
 
             _startupManagementControl = new StartupManagementControl();
+            _startupManagementModel = new StartupManagementModel();
+            _startupManagementPresenter = new StartupManagementPresenter(_startupManagementControl, _startupManagementModel);
         }
     }
 }
