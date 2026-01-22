@@ -1,5 +1,8 @@
-﻿using Computer_Maintenance.Model.Enums.StartupManagement;
+﻿using Computer_Maintenance.Core.Services;
+using Computer_Maintenance.Core.WinApi;
+using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
+using Computer_Maintenance.Model.Structs.SystemCleaning;
 using Microsoft.Win32;
 
 namespace Computer_Maintenance.Model.Models
@@ -7,17 +10,74 @@ namespace Computer_Maintenance.Model.Models
     public class StartupManagementModel
     {
         private const string REGISTRY_CURRENT_USER = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        private const string REGISTRY_ALL_USERS = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        private const string WOW6432Node = "Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Run";
+
+        private static readonly string FOLDER_CURRENT_USER = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
+        private static readonly string FOLDER_All_USERS = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
+
         public List<StartupItem> RegistryStartupItems_CurrentUser { get; set; } = new List<StartupItem>();
+        public List<StartupItem> RegistryStartupItems_AllUsers { get; set; } = new List<StartupItem>();
+        public List<StartupItem> FolderStartupItems_CurrentUser { get; set; } = new List<StartupItem>();
+        public List<StartupItem> FolderStartupItems_AllUsers { get; set; } = new List<StartupItem>();
 
         public void LoadAllStartupItems()
         {
-            LoadRegistryStartupItems();
+            LoadRegistryStartupItems(registryRoot: Registry.CurrentUser, startupType: StartupType.RegistryCurrentUser, collectionToAdd: RegistryStartupItems_CurrentUser, path: REGISTRY_CURRENT_USER);
+            LoadRegistryStartupItems(registryRoot: Registry.LocalMachine, startupType: StartupType.RegistryLocalMachine, collectionToAdd: RegistryStartupItems_AllUsers, path: REGISTRY_ALL_USERS);
+            LoadWOW6432Node(registryRoot: Registry.LocalMachine, startupType: StartupType.RegistryLocalMachine, collectionToAdd: RegistryStartupItems_AllUsers, path: WOW6432Node);
+            LoadFolderStartupItems(startupType: StartupType.StartupFolderCurrentUser, collectionToAdd: FolderStartupItems_CurrentUser, FOLDER_CURRENT_USER);
+            LoadFolderStartupItems(startupType: StartupType.StartupFolderAllUsers, collectionToAdd: FolderStartupItems_AllUsers, FOLDER_All_USERS);
         }
-        private void LoadRegistryStartupItems()
-        {
-            RegistryStartupItems_CurrentUser.Clear();
 
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(REGISTRY_CURRENT_USER))
+        private unsafe void LoadFolderStartupItems(StartupType startupType, List<StartupItem> collectionToAdd, string path)
+        {
+            if (!Directory.Exists(path)) return;
+
+            string searchPath = path.EndsWith("\\") ? path + "*" : path + "\\*exe";
+
+            FileApi.WIN32_FIND_DATA findData;
+            IntPtr hFind = FileApi.FindFirstFileExW(
+                searchPath,
+                FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
+                &findData,
+                FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+                IntPtr.Zero,
+                FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
+
+            if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { return; }
+
+            try
+            {
+                do
+                {
+                    string name = findData.GetFileName();
+                    if (name == "." || name == "..") { continue; }
+
+                    string fullPath = Path.Combine(path, name);
+
+                    StartupItem item = new StartupItem
+                    {
+                        Name = name,
+                        Type = startupType,
+                        Path = fullPath,
+
+                    };
+                    collectionToAdd.Add(item);
+
+                }
+                while (FileApi.FindNextFileW(hFind, &findData));
+            }
+            finally
+            {
+                FileApi.FindClose(hFind);
+            }
+
+        }
+        private void LoadRegistryStartupItems(RegistryKey registryRoot, StartupType startupType, List<StartupItem> collectionToAdd, string path)
+        {
+
+            using (RegistryKey key = registryRoot.OpenSubKey(path))
             {
                 if (key != null)
                 {
@@ -32,12 +92,40 @@ namespace Computer_Maintenance.Model.Models
                         {
                             Name = GetNameExe(extractedPath),
                             OriginalRegistryName = valueName,
-                            Type = StartupType.RegistryCurrentUser,
+                            Type = startupType,
                             Path = extractedPath,
                             OriginalRegistryValue = value?.ToString()
                         };
 
-                        RegistryStartupItems_CurrentUser.Add(item);
+                        collectionToAdd.Add(item);
+                    }
+                }
+            }
+        }
+        private void LoadWOW6432Node(RegistryKey registryRoot, StartupType startupType, List<StartupItem> collectionToAdd, string path)
+        {
+            using (RegistryKey key = registryRoot.OpenSubKey(path))
+            {
+                if (key != null)
+                {
+                    string[] valueNames = key.GetValueNames();
+
+                    foreach (string valueName in valueNames)
+                    {
+                        object value = key.GetValue(valueName);
+                        string extractedPath = ExtractPath(value?.ToString());
+
+                        StartupItem item = new StartupItem
+                        {
+                            Name = GetNameExe(extractedPath),
+                            OriginalRegistryName = valueName,
+                            Type = startupType,
+                            Path = extractedPath,
+                            Bit = "32-битное",
+                            OriginalRegistryValue = value?.ToString()
+                        };
+
+                        collectionToAdd.Add(item);
                     }
                 }
             }
@@ -50,7 +138,6 @@ namespace Computer_Maintenance.Model.Models
 
             try
             {
-
                 switch (startupType)
                 {
                     case StartupType.RegistryCurrentUser:
@@ -60,23 +147,11 @@ namespace Computer_Maintenance.Model.Models
                         return false;
                 }
 
+                if (key == null) { return false; }
 
-                if (key != null)
-                {
-                    try
-                    {
-                        key.DeleteValue(registryKeyName);
-                        return true;
-                    }
-                    catch
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
+                //key.DeleteValue(registryKeyName);
+
+                return true;
             }
             catch
             {
@@ -90,11 +165,10 @@ namespace Computer_Maintenance.Model.Models
         }
 
         /// <summary>
-        /// Извлекаем чистый путь из реестра без всяких аргументов
+        /// Извлекаем чистый путь из реестра без аргументов
         /// </summary>
         /// <returns></returns>
         /// 
-
 
         private string ExtractPath(string rawStr)
         {
@@ -125,7 +199,7 @@ namespace Computer_Maintenance.Model.Models
                     }
                     else
                     {
-                        return rawStr.Substring(0, index_EmptyChar - 1);
+                        return rawStr.Substring(0, index_EmptyChar);
                     }
                 }
             }
@@ -144,7 +218,26 @@ namespace Computer_Maintenance.Model.Models
 
         public List<StartupItem> GetStartupItems()
         {
-            return RegistryStartupItems_CurrentUser;
+            List<StartupItem> allItems = new List<StartupItem>();
+
+            allItems.AddRange(RegistryStartupItems_CurrentUser);
+            allItems.AddRange(RegistryStartupItems_AllUsers);
+            allItems.AddRange(FolderStartupItems_CurrentUser);
+            allItems.AddRange(FolderStartupItems_AllUsers);
+
+            return allItems;
+        }
+
+        public void ShowInfo(string message)
+        {
+            MessageService.ShowMessage(null, message, "Информация",
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        public void ShowError(string message)
+        {
+            MessageService.ShowMessage(null, message, "Ошибка",
+            MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
     }

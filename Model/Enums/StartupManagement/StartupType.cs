@@ -5,7 +5,8 @@ namespace Computer_Maintenance.Model.Enums.StartupManagement
     {
         RegistryCurrentUser,
         RegistryLocalMachine,
-        StartupFolder,
+        StartupFolderCurrentUser,
+        StartupFolderAllUsers,
         TaskScheduler,
         Service,
         GroupPolicy,

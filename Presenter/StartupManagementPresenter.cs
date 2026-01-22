@@ -31,15 +31,17 @@ namespace Computer_Maintenance.Presenter
             foreach (StartupItem item in items)
             {
                 bool deleted = _model.DeleteRegistryRecord(item.Type, item.OriginalRegistryName);
-                if (deleted)
-                {
-                    MessageBox.Show($"{item.Name} Успешно удален из автозагрузки");
-                }
-                else
-                {
-                    MessageBox.Show($"{item.Name} Ну удалось удалить из автозагрузки");
-                }
+                //if (deleted)
+                //{
+                //    MessageBox.Show($"{item.Name} Успешно удален из автозагрузки");
+                //}
+                //else 
+                //{
+                //    _model.ShowInfo("")
+                //    MessageBox.Show($"{item.Name} Ну удалось удалить из автозагрузки");
+                //}
             }
         }
+
     }
 }
