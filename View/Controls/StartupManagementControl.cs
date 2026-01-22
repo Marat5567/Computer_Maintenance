@@ -77,19 +77,31 @@ namespace Computer_Maintenance.View.Controls
         }
         private void listViewRegistryCurrentUser_Resize(object sender, EventArgs e)
         {
-            listViewRegistryCurrentUser.Columns[1].Width = listViewRegistryCurrentUser.ClientSize.Width - listViewRegistryCurrentUser.Columns[0].Width;
+            if (listViewRegistryCurrentUser.Columns.Count >= 2)
+            {
+                listViewRegistryCurrentUser.Columns[1].Width = listViewRegistryCurrentUser.ClientSize.Width - listViewRegistryCurrentUser.Columns[0].Width;
+            }
         }
         private void listViewRegistryAllUsers_Resize(object sender, EventArgs e)
         {
-            listViewRegistryAllUsers.Columns[1].Width = listViewRegistryAllUsers.ClientSize.Width - (listViewRegistryAllUsers.Columns[0].Width + listViewRegistryAllUsers.Columns[2].Width);
+            if (listViewRegistryCurrentUser.Columns.Count >= 3)
+            {
+                listViewRegistryAllUsers.Columns[1].Width = listViewRegistryAllUsers.ClientSize.Width - (listViewRegistryAllUsers.Columns[0].Width + listViewRegistryAllUsers.Columns[2].Width);
+            }
         }
         private void listViewFolderCurrentUser_Resize(object sender, EventArgs e)
         {
-            listViewFolderCurrentUser.Columns[1].Width = listViewFolderCurrentUser.ClientSize.Width - listViewFolderCurrentUser.Columns[0].Width;
+            if (listViewRegistryCurrentUser.Columns.Count >= 2)
+            {
+                listViewFolderCurrentUser.Columns[1].Width = listViewFolderCurrentUser.ClientSize.Width - listViewFolderCurrentUser.Columns[0].Width;
+            }
         }
         private void listViewFolderAllUsers_Resize(object sender, EventArgs e)
         {
-            listViewFolderAllUsers.Columns[1].Width = listViewFolderAllUsers.ClientSize.Width - listViewFolderAllUsers.Columns[0].Width;
+            if (listViewRegistryCurrentUser.Columns.Count >= 2)
+            {
+                listViewFolderAllUsers.Columns[1].Width = listViewFolderAllUsers.ClientSize.Width - listViewFolderAllUsers.Columns[0].Width;
+            }
         }
         public List<StartupItem> GetSelectedStartupItems()
         {
