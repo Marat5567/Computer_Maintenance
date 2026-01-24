@@ -11,6 +11,7 @@ namespace Computer_Maintenance.Model.Enums.StartupManagement
         TaskScheduler = 1 << 4,
         Service = 1 << 5,
         GroupPolicy = 1 << 6,
-        ShellExtension = 1 << 7
+        ShellExtension = 1 << 7,
+        All = RegistryCurrentUser | RegistryLocalMachine | StartupFolderCurrentUser | StartupFolderAllUsers | TaskScheduler | Service | GroupPolicy | ShellExtension
     }
 }

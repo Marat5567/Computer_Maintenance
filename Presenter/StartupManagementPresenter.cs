@@ -16,24 +16,48 @@ namespace Computer_Maintenance.Presenter
 
             _view.LoadControl += OnLoadControl;
             _view.DeleteSelectedItem_Folder += OnDeleteSelectedItem_Folder;
+            _view.ChangeSelectedItem_StateStartup_Registry += OnChangeSelectedItem_StateStartup_Registry;
         }
         private void OnLoadControl(object s, EventArgs e)
         {
-            _model.LoadAllStartupItems();
-           
-            _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems());
+            _model.LoadStartupItems(StartupType.All);
 
-            List<StartupItemFolder> items = _model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
-            _view.DisplayFolderStartupItems(items, StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
+            List<StartupItemRegistry> registryItems = _model.GetRegistryStartupItems(StartupType.RegistryCurrentUser | StartupType.RegistryLocalMachine);
+            _view.DisplayRegistryStartupItems(registryItems, StartupType.RegistryCurrentUser | StartupType.RegistryLocalMachine);
+
+            List<StartupItemFolder> folderItems = _model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
+            _view.DisplayFolderStartupItems(folderItems, StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
 
 
         }
+        private void OnChangeSelectedItem_StateStartup_Registry(object s, EventArgs e)
+        {
+            List<StartupItemRegistry> items = _view.GetSelectedStartupItems_Registry();
+
+            foreach (StartupItemRegistry item in items)
+            {
+                bool changed = _model.ChangeStateStartup(item.RegistryName, item.Type, item.Is32Bit);
+
+                if (changed)
+                {
+                    if (item.Type.HasFlag(StartupType.RegistryCurrentUser))
+                    {
+                        _model.LoadStartupItems(StartupType.RegistryCurrentUser);
+                        _view.DisplayRegistryStartupItems(_model.RegistryStartupItems_CurrentUser, StartupType.RegistryCurrentUser);
+                    }
+                    if (item.Type.HasFlag(StartupType.RegistryLocalMachine))
+                    {
+                        _model.LoadStartupItems(StartupType.RegistryLocalMachine);
+                        _view.DisplayRegistryStartupItems(_model.RegistryStartupItems_AllUsers, StartupType.RegistryLocalMachine);
+                    }
+                }
+            }
+
+        }
+
         private void OnDeleteSelectedItem_Folder(object s, EventArgs e)
         {
             List<StartupItemFolder> items = _view.GetSelectedStartupItems_Folder();
-
-            bool currentUserUpdated = false;
-            bool allUsersUpdated = false;
 
             foreach (StartupItemFolder item in items)
             {
@@ -43,26 +67,16 @@ namespace Computer_Maintenance.Presenter
                 {
                     if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
                     {
-                        _model.FolderStartupItems_CurrentUser.Remove(item);
-                        currentUserUpdated = true;
+                        _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
+                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_CurrentUser, StartupType.StartupFolderCurrentUser);
                     }
 
                     if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
                     {
-                        _model.FolderStartupItems_AllUsers.Remove(item);
-                        allUsersUpdated = true;
+                        _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
+                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_AllUsers, StartupType.StartupFolderAllUsers);
                     }
                 }
-            }
-
-            if (currentUserUpdated)
-            {
-                _view.DisplayFolderStartupItems(_model.FolderStartupItems_CurrentUser, StartupType.StartupFolderCurrentUser);
-            }
-
-            if (allUsersUpdated)
-            {
-                _view.DisplayFolderStartupItems(_model.FolderStartupItems_AllUsers, StartupType.StartupFolderAllUsers);
             }
 
         }

@@ -10,8 +10,10 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler DeleteSelectedItem_Registry;
         event EventHandler DeleteSelectedItem_Folder;
         event EventHandler ChangeSelectedItem;
-        void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems);
+        event EventHandler ChangeSelectedItem_StateStartup_Registry;
+        void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems, StartupType type);
         void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type);
         List<StartupItemFolder> GetSelectedStartupItems_Folder();
+        List<StartupItemRegistry> GetSelectedStartupItems_Registry();
     }
 }
