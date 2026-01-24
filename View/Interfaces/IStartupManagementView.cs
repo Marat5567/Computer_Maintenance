@@ -1,4 +1,5 @@
-﻿using Computer_Maintenance.Model.Structs.StartupManagement;
+﻿using Computer_Maintenance.Model.Enums.StartupManagement;
+using Computer_Maintenance.Model.Structs.StartupManagement;
 
 namespace Computer_Maintenance.View.Interfaces
 {
@@ -6,9 +7,11 @@ namespace Computer_Maintenance.View.Interfaces
     {
         event EventHandler LoadControl;
 
-        event EventHandler DeleteSelectedItem;
+        event EventHandler DeleteSelectedItem_Registry;
+        event EventHandler DeleteSelectedItem_Folder;
         event EventHandler ChangeSelectedItem;
-        void DisplayStartupItems(List<StartupItem> startupItems);
-        List<StartupItem> GetSelectedStartupItems();
+        void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems);
+        void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type);
+        List<StartupItemFolder> GetSelectedStartupItems_Folder();
     }
 }

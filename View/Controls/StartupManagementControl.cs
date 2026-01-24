@@ -7,63 +7,26 @@ namespace Computer_Maintenance.View.Controls
 {
     public partial class StartupManagementControl : UserControl, IStartupManagementView
     {
-        private ContextMenuStrip contextMenuStrip;
+        private ListView _activeListView;
 
         public event EventHandler LoadControl;
         public event EventHandler MouseClicked_ListView;
 
-        public event EventHandler DeleteSelectedItem;
+        public event EventHandler DeleteSelectedItem_Registry;
+        public event EventHandler DeleteSelectedItem_Folder;
         public event EventHandler ChangeSelectedItem;
-        public void DisplayStartupItems(List<StartupItem> startupItems)
-        {
-            listViewRegistryCurrentUser.Items.Clear();
-            listViewRegistryAllUsers.Items.Clear();
-            listViewFolderCurrentUser.Items.Clear();
-            listViewFolderAllUsers.Items.Clear();
 
-            foreach (StartupItem item in startupItems)
-            {
-                switch (item.Type)
-                {
-                    case StartupType.RegistryCurrentUser:
-
-                        ListViewItem viewItemCU = new ListViewItem(item.Name);
-                        viewItemCU.SubItems.Add(item.Path);
-                        viewItemCU.Tag = item;
-
-                        listViewRegistryCurrentUser.Items.Add(viewItemCU);
-                        break;
-                    case StartupType.RegistryLocalMachine:
-
-                        ListViewItem viewItemLM = new ListViewItem(item.Name);
-                        viewItemLM.SubItems.Add(item.Path);
-                        viewItemLM.SubItems.Add(item.Bit);
-                        viewItemLM.Tag = item;
-
-                        listViewRegistryAllUsers.Items.Add(viewItemLM);
-                        break;
-                    case StartupType.StartupFolderCurrentUser:
-
-                        ListViewItem viewItemFolderCU = new ListViewItem(item.Name);
-                        viewItemFolderCU.SubItems.Add(item.Path);
-                        viewItemFolderCU.Tag = item;
-
-                        listViewFolderCurrentUser.Items.Add(viewItemFolderCU);
-                        break;
-                    case StartupType.StartupFolderAllUsers:
-                        ListViewItem viewItemFolderLM = new ListViewItem(item.Name);
-                        viewItemFolderLM.SubItems.Add(item.Path);
-                        viewItemFolderLM.Tag = item;
-                        listViewFolderAllUsers.Items.Add(viewItemFolderLM);
-                        break;
-
-                }
-            }
-        }
         public StartupManagementControl()
         {
             InitializeComponent();
+
+            // Подписка на активацию списков один раз
+            listViewFolderCurrentUser.MouseDown += ListView_Activate;
+            listViewFolderAllUsers.MouseDown += ListView_Activate;
+            listViewRegistryCurrentUser.MouseDown += ListView_Activate;
+            listViewRegistryAllUsers.MouseDown += ListView_Activate;
         }
+
         private void StartupManagementControl_Load(object sender, EventArgs e)
         {
             Init_ListViewRegistryCurrentUser();
@@ -71,185 +34,240 @@ namespace Computer_Maintenance.View.Controls
             Init_ListViewFolderCurrentUser();
             Init_ListViewFolderAllUsers();
 
-            InitContextMenu();
-
             LoadControl?.Invoke(this, EventArgs.Empty);
         }
-        private void listViewRegistryCurrentUser_Resize(object sender, EventArgs e)
+        public void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems)
         {
-            if (listViewRegistryCurrentUser.Columns.Count >= 2)
-            {
-                listViewRegistryCurrentUser.Columns[1].Width = listViewRegistryCurrentUser.ClientSize.Width - listViewRegistryCurrentUser.Columns[0].Width;
-            }
-        }
-        private void listViewRegistryAllUsers_Resize(object sender, EventArgs e)
-        {
-            if (listViewRegistryCurrentUser.Columns.Count >= 3)
-            {
-                listViewRegistryAllUsers.Columns[1].Width = listViewRegistryAllUsers.ClientSize.Width - (listViewRegistryAllUsers.Columns[0].Width + listViewRegistryAllUsers.Columns[2].Width);
-            }
-        }
-        private void listViewFolderCurrentUser_Resize(object sender, EventArgs e)
-        {
-            if (listViewRegistryCurrentUser.Columns.Count >= 2)
-            {
-                listViewFolderCurrentUser.Columns[1].Width = listViewFolderCurrentUser.ClientSize.Width - listViewFolderCurrentUser.Columns[0].Width;
-            }
-        }
-        private void listViewFolderAllUsers_Resize(object sender, EventArgs e)
-        {
-            if (listViewRegistryCurrentUser.Columns.Count >= 2)
-            {
-                listViewFolderAllUsers.Columns[1].Width = listViewFolderAllUsers.ClientSize.Width - listViewFolderAllUsers.Columns[0].Width;
-            }
-        }
-        public List<StartupItem> GetSelectedStartupItems()
-        {
-            List<StartupItem> selectedItems = new List<StartupItem>();
+            listViewRegistryCurrentUser.BeginUpdate();
+            listViewRegistryAllUsers.BeginUpdate();
 
-            foreach (ListViewItem listViewItem in listViewRegistryCurrentUser.SelectedItems)
+            listViewRegistryCurrentUser.Items.Clear();
+            listViewRegistryAllUsers.Items.Clear();
+
+            foreach (StartupItemRegistry item in startupItems)
             {
-                if (listViewItem.Tag is StartupItem startupItem)
+                ListViewItem viewItem = new ListViewItem(item.NameExtracted);
+                viewItem.SubItems.Add(item.PathExtracted);
+                viewItem.Tag = item;
+
+                switch (item.Type)
                 {
-                    selectedItems.Add(startupItem);
+                    case StartupType.RegistryCurrentUser:
+                        listViewRegistryCurrentUser.Items.Add(viewItem);
+                        break;
+                    case StartupType.RegistryLocalMachine:
+                        viewItem.SubItems.Add(item.Bit);
+                        listViewRegistryAllUsers.Items.Add(viewItem);
+                        break;
                 }
+            }
+
+            listViewRegistryCurrentUser.EndUpdate();
+            listViewRegistryAllUsers.EndUpdate();
+        }
+
+        public void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type)
+        {
+            if ((type & StartupType.StartupFolderCurrentUser) != 0)
+            {
+                listViewFolderCurrentUser.BeginUpdate();
+                listViewFolderCurrentUser.Items.Clear();
+                foreach (var item in startupItems)
+                {
+                    if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
+                    {
+                        var viewItem = new ListViewItem(item.NameExtracted);
+                        viewItem.SubItems.Add(item.PathExtracted);
+                        viewItem.Tag = item;
+                        listViewFolderCurrentUser.Items.Add(viewItem);
+                    }
+                }
+                listViewFolderCurrentUser.EndUpdate();
+            }
+
+            if ((type & StartupType.StartupFolderAllUsers) != 0)
+            {
+                listViewFolderAllUsers.BeginUpdate();
+                listViewFolderAllUsers.Items.Clear();
+                foreach (var item in startupItems)
+                {
+                    if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
+                    {
+                        var viewItem = new ListViewItem(item.NameExtracted);
+                        viewItem.SubItems.Add(item.PathExtracted);
+                        viewItem.Tag = item;
+                        listViewFolderAllUsers.Items.Add(viewItem);
+                    }
+                }
+                listViewFolderAllUsers.EndUpdate();
+            }
+        }
+
+
+        public List<StartupItemFolder> GetSelectedStartupItems_Folder()
+        {
+            if (_activeListView != listViewFolderCurrentUser && _activeListView != listViewFolderAllUsers)
+                return new();
+
+            List<StartupItemFolder> selectedItems = new List<StartupItemFolder>();
+
+            foreach (ListViewItem listViewItem in _activeListView.SelectedItems)
+            {
+                if (listViewItem.Tag is StartupItemFolder startupItem)
+                    selectedItems.Add(startupItem);
             }
 
             return selectedItems;
         }
+
         private void Init_ListViewFolderCurrentUser()
         {
             listViewFolderCurrentUser.View = System.Windows.Forms.View.Details;
             listViewFolderCurrentUser.Columns.Add("Имя", 200);
             listViewFolderCurrentUser.Columns.Add("Путь", 600);
-
-            listViewFolderCurrentUser.Columns[0].TextAlign = HorizontalAlignment.Left;
-            listViewFolderCurrentUser.Columns[1].TextAlign = HorizontalAlignment.Left;
-
-            listViewFolderCurrentUser.BackColor = ApplicationSettings.BackgroundColor;
-            listViewFolderCurrentUser.ForeColor = ApplicationSettings.TextColor;
+            listViewFolderCurrentUser.BackColor = Color.FromArgb(146, 156, 155);
+            listViewFolderCurrentUser.ForeColor = Color.Black;
         }
+
         private void Init_ListViewFolderAllUsers()
         {
             listViewFolderAllUsers.View = System.Windows.Forms.View.Details;
             listViewFolderAllUsers.Columns.Add("Имя", 200);
             listViewFolderAllUsers.Columns.Add("Путь", 600);
-
-            listViewFolderAllUsers.Columns[0].TextAlign = HorizontalAlignment.Left;
-            listViewFolderAllUsers.Columns[1].TextAlign = HorizontalAlignment.Left;
-
-            listViewFolderAllUsers.BackColor = ApplicationSettings.BackgroundColor;
-            listViewFolderAllUsers.ForeColor = ApplicationSettings.TextColor;
+            listViewFolderAllUsers.BackColor = Color.FromArgb(146, 156, 155);
+            listViewFolderAllUsers.ForeColor = Color.Black;
         }
-
 
         private void Init_ListViewRegistryCurrentUser()
         {
             listViewRegistryCurrentUser.View = System.Windows.Forms.View.Details;
             listViewRegistryCurrentUser.Columns.Add("Имя", 200);
             listViewRegistryCurrentUser.Columns.Add("Путь", 600);
-
-            listViewRegistryCurrentUser.Columns[0].TextAlign = HorizontalAlignment.Left;
-            listViewRegistryCurrentUser.Columns[1].TextAlign = HorizontalAlignment.Left;
-
-            listViewRegistryCurrentUser.BackColor = ApplicationSettings.BackgroundColor;
-            listViewRegistryCurrentUser.ForeColor = ApplicationSettings.TextColor;
+            listViewRegistryCurrentUser.BackColor = Color.FromArgb(146, 156, 155);
+            listViewRegistryCurrentUser.ForeColor = Color.Black;
         }
+
         private void Init_ListViewRegistryAllUsers()
         {
             listViewRegistryAllUsers.View = System.Windows.Forms.View.Details;
             listViewRegistryAllUsers.Columns.Add("Имя", 200);
             listViewRegistryAllUsers.Columns.Add("Путь", 600);
             listViewRegistryAllUsers.Columns.Add("Разрядность", 100);
-
-            listViewRegistryAllUsers.Columns[0].TextAlign = HorizontalAlignment.Left;
-            listViewRegistryAllUsers.Columns[1].TextAlign = HorizontalAlignment.Left;
-            listViewRegistryAllUsers.Columns[2].TextAlign = HorizontalAlignment.Center;
-
-            listViewRegistryAllUsers.BackColor = ApplicationSettings.BackgroundColor;
-            listViewRegistryAllUsers.ForeColor = ApplicationSettings.TextColor;
+            listViewRegistryAllUsers.BackColor = Color.FromArgb(146, 156, 155);
+            listViewRegistryAllUsers.ForeColor = Color.Black;
         }
-        private void InitContextMenu()
+
+        private void listViewFolderCurrentUser_Resize(object sender, EventArgs e)
         {
-            contextMenuStrip = new ContextMenuStrip();
+            if (listViewFolderCurrentUser.Columns.Count >= 2)
+                listViewFolderCurrentUser.Columns[1].Width = listViewFolderCurrentUser.ClientSize.Width - listViewFolderCurrentUser.Columns[0].Width;
+        }
 
-            ToolStripMenuItem deleteMenuItem = new ToolStripMenuItem("Удалить");
-            deleteMenuItem.Click += (s, e) => DeleteSelectedItem?.Invoke(this, EventArgs.Empty);
+        private void listViewFolderAllUsers_Resize(object sender, EventArgs e)
+        {
+            if (listViewFolderAllUsers.Columns.Count >= 2)
+                listViewFolderAllUsers.Columns[1].Width = listViewFolderAllUsers.ClientSize.Width - listViewFolderAllUsers.Columns[0].Width;
+        }
 
-            ToolStripMenuItem changeMenuItem = new ToolStripMenuItem("Изменить");
+        private void listViewRegistryCurrentUser_Resize(object sender, EventArgs e)
+        {
+            if (listViewRegistryCurrentUser.Columns.Count >= 2)
+                listViewRegistryCurrentUser.Columns[1].Width = listViewRegistryCurrentUser.ClientSize.Width - listViewRegistryCurrentUser.Columns[0].Width;
+        }
 
+        private void listViewRegistryAllUsers_Resize(object sender, EventArgs e)
+        {
+            if (listViewRegistryAllUsers.Columns.Count >= 3)
+                listViewRegistryAllUsers.Columns[1].Width = listViewRegistryAllUsers.ClientSize.Width -
+                                                           (listViewRegistryAllUsers.Columns[0].Width +
+                                                            listViewRegistryAllUsers.Columns[2].Width);
+        }
 
-            contextMenuStrip.Items.AddRange(new ToolStripItem[]
+        private void listViewFolderCurrentUser_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
             {
-                deleteMenuItem,
-                changeMenuItem,
-            });
-
-            listViewRegistryCurrentUser.ContextMenuStrip = contextMenuStrip;
-            listViewRegistryAllUsers.ContextMenuStrip = contextMenuStrip;
-
+                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewFolderCurrentUser, StartupType.StartupFolderCurrentUser);
+                contextMenu.Show(listViewFolderCurrentUser, e.Location);
+            }
         }
 
         private void listViewFolderAllUsers_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
-                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewFolderAllUsers);
-                listViewFolderAllUsers.ContextMenuStrip = contextMenu;
+                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewFolderAllUsers, StartupType.StartupFolderAllUsers);
                 contextMenu.Show(listViewFolderAllUsers, e.Location);
             }
         }
-        private void listViewFolderCurrentUser_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-            {
-                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewFolderCurrentUser);
-                listViewFolderCurrentUser.ContextMenuStrip = contextMenu;
-                contextMenu.Show(listViewFolderCurrentUser, e.Location);
-            }
-        }
+
         private void listViewRegistryCurrentUser_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
-                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewRegistryCurrentUser);
-                listViewRegistryCurrentUser.ContextMenuStrip = contextMenu;
+                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewRegistryCurrentUser, StartupType.RegistryCurrentUser);
                 contextMenu.Show(listViewRegistryCurrentUser, e.Location);
             }
         }
+
         private void listViewRegistryAllUsers_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
-                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewRegistryAllUsers);
-                listViewRegistryAllUsers.ContextMenuStrip = contextMenu;
+                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewRegistryAllUsers, StartupType.RegistryLocalMachine);
                 contextMenu.Show(listViewRegistryAllUsers, e.Location);
             }
         }
 
-        private ContextMenuStrip CreateContextMenuItem(ListView listView)
+        private ContextMenuStrip CreateContextMenuItem(ListView listView, StartupType startupType)
         {
-            ContextMenuStrip contextMenuStrip = new ContextMenuStrip();
+            ContextMenuStrip contextMenu = new ContextMenuStrip();
 
-            ToolStripMenuItem addMenuItem = new ToolStripMenuItem("Добавить");
-            ToolStripMenuItem openFolderItem = new ToolStripMenuItem("Открыть в проводнике");
-
-            contextMenuStrip.Items.Add(addMenuItem);
-            contextMenuStrip.Items.Add(openFolderItem);
+            contextMenu.Items.Add(new ToolStripMenuItem("Добавить"));
+            contextMenu.Items.Add(new ToolStripMenuItem("Открыть в проводнике"));
 
             if (listView.Items.Count > 0)
             {
-                ToolStripMenuItem deleteMenuItem = new ToolStripMenuItem("Удалить");
-                ToolStripMenuItem changeMenuItem = new ToolStripMenuItem("Изменить");
+                ToolStripMenuItem deleteItem = new ToolStripMenuItem("Удалить");
+                ToolStripMenuItem changeItem = new ToolStripMenuItem("Изменить");
                 ToolStripMenuItem copyPathItem = new ToolStripMenuItem("Копировать путь");
 
-                contextMenuStrip.Items.Add(deleteMenuItem);
-                contextMenuStrip.Items.Add(changeMenuItem);
-                contextMenuStrip.Items.Add(copyPathItem);
+                contextMenu.Items.Add(deleteItem);
+                contextMenu.Items.Add(changeItem);
+                contextMenu.Items.Add(copyPathItem);
+
+                if (startupType.HasFlag(StartupType.StartupFolderCurrentUser) ||
+                    startupType.HasFlag(StartupType.StartupFolderAllUsers))
+                {
+                    deleteItem.Click += (s, e) => DeleteSelectedItem_Folder?.Invoke(this, EventArgs.Empty);
+                }
+
             }
 
-            return contextMenuStrip;
+            return contextMenu;
         }
 
+        private void ListView_Activate(object sender, MouseEventArgs e)
+        {
+            if (!(e.Button == MouseButtons.Left || e.Button == MouseButtons.Right))
+                return;
+
+            var current = sender as ListView;
+            if (current == null) return;
+
+            if (e.Button == MouseButtons.Left)
+            {
+                // Левый клик: переключаем активный список и очищаем выделение другого
+                if (_activeListView != null && _activeListView != current)
+                    _activeListView.SelectedItems.Clear();
+
+                _activeListView = current;
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                // Правый клик: просто помечаем активный список
+                _activeListView = current;
+            }
+        }
     }
 }
