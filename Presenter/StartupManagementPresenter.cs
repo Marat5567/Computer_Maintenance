@@ -1,7 +1,7 @@
-﻿using Computer_Maintenance.Model.Models;
-using Computer_Maintenance.View.Interfaces;
+﻿using Computer_Maintenance.Model.Enums.StartupManagement;
+using Computer_Maintenance.Model.Models;
 using Computer_Maintenance.Model.Structs.StartupManagement;
-using Computer_Maintenance.Model.Enums.StartupManagement;
+using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Presenter
 {
@@ -17,6 +17,8 @@ namespace Computer_Maintenance.Presenter
             _view.LoadControl += OnLoadControl;
             _view.DeleteSelectedItem_Folder += OnDeleteSelectedItem_Folder;
             _view.ChangeSelectedItem_StateStartup_Registry += OnChangeSelectedItem_StateStartup_Registry;
+            _view.ChangeSelectedItem_StateStartup_Folder += OnChangeSelectedItem_StateStartup_Folder;
+            _view.OpenExplorerClicked += OnOpenExplorerClicked;
         }
         private void OnLoadControl(object s, EventArgs e)
         {
@@ -30,6 +32,33 @@ namespace Computer_Maintenance.Presenter
 
 
         }
+        private void OnOpenExplorerClicked(object s, EventArgs e)
+        {
+            _view.GetSelectedStartupItems_Folder();
+
+            if (_view.LastFolderSelectionSource != StartupType.None)
+            {
+                _model.OpenPathToExplorer(
+                    _view.SelectedPath.isFile,
+                    _view.SelectedPath.path,
+                    _view.LastFolderSelectionSource
+                );
+                return;
+            }
+
+            _view.GetSelectedStartupItems_Registry();
+
+            if (!string.IsNullOrEmpty(_view.SelectedPath.path))
+            {
+                _model.OpenPathToExplorer(
+                    true,
+                    _view.SelectedPath.path,
+                    StartupType.None
+                );
+            }
+        }
+
+
         private void OnChangeSelectedItem_StateStartup_Registry(object s, EventArgs e)
         {
             List<StartupItemRegistry> items = _view.GetSelectedStartupItems_Registry();
@@ -52,7 +81,30 @@ namespace Computer_Maintenance.Presenter
                     }
                 }
             }
+        }
 
+        private void OnChangeSelectedItem_StateStartup_Folder(object s, EventArgs e)
+        {
+            List<StartupItemFolder> items = _view.GetSelectedStartupItems_Folder();
+
+            foreach (StartupItemFolder item in items)
+            {
+                bool changed = _model.ChangeStateStartup(item.NameExtracted, item.Type);
+
+                if (changed)
+                {
+                    if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
+                    {
+                        _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
+                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_CurrentUser, StartupType.StartupFolderCurrentUser);
+                    }
+                    if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
+                    {
+                        _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
+                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_AllUsers, StartupType.StartupFolderAllUsers);
+                    }
+                }
+            }
         }
 
         private void OnDeleteSelectedItem_Folder(object s, EventArgs e)

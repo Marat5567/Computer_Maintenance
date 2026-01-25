@@ -11,6 +11,12 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler DeleteSelectedItem_Folder;
         event EventHandler ChangeSelectedItem;
         event EventHandler ChangeSelectedItem_StateStartup_Registry;
+        event EventHandler ChangeSelectedItem_StateStartup_Folder;
+        event EventHandler OpenExplorerClicked;
+
+
+        (bool isFile, string path) SelectedPath { get; set; }
+        public StartupType LastFolderSelectionSource { get; set; }
         void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems, StartupType type);
         void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type);
         List<StartupItemFolder> GetSelectedStartupItems_Folder();

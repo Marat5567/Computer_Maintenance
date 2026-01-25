@@ -3,6 +3,7 @@ using Computer_Maintenance.Core.WinApi;
 using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
 using Microsoft.Win32;
+using System.Diagnostics;
 
 namespace Computer_Maintenance.Model.Models
 {
@@ -89,11 +90,14 @@ namespace Computer_Maintenance.Model.Models
 
                         string fullPath = Path.Combine(path, name);
 
+                        StartupState state;
+
                         StartupItemFolder item = new StartupItemFolder
                         {
                             NameExtracted = name,
                             PathExtracted = fullPath,
                             Type = startupType,
+                            State = GetStartupState(name, startupType)
                         };
                         collectionToAdd.Add(item);
 
@@ -134,6 +138,41 @@ namespace Computer_Maintenance.Model.Models
                             collectionToAdd.Add(item);
                         }
                     }
+                }
+            }
+        }
+
+        public void OpenPathToExplorer(bool isFile, string path, StartupType startupType)
+        {
+            if (isFile)
+            {
+                if (File.Exists(path))
+                {
+                    Process.Start("explorer.exe", $"/select,\"{path}\"");
+                }
+            }
+            else
+            {
+                string directoryPath = String.Empty;
+                switch (startupType)
+                {
+                    case StartupType.StartupFolderCurrentUser:
+                        directoryPath = FOLDER_CURRENT_USER;
+                        break;
+                    case StartupType.StartupFolderAllUsers:
+                        directoryPath = FOLDER_All_USERS;
+                        break;
+                    case StartupType.None:
+                        return;
+                    default:
+                        directoryPath = Path.GetDirectoryName(path);
+                        break;
+                }
+
+                
+                if (Directory.Exists(directoryPath))
+                {
+                    Process.Start("explorer.exe", $"\"{directoryPath}\"");
                 }
             }
         }
@@ -193,12 +232,18 @@ namespace Computer_Maintenance.Model.Models
                             key = Registry.LocalMachine.OpenSubKey(REGISTRY_ALL_USERS_APPROWED, true);
                         }
                         break;
+                    case StartupType.StartupFolderCurrentUser:
+                        key = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_CURRENT_USER_REGISTRY_PATH_APPROWED, true);
+                        break;
+                    case StartupType.StartupFolderAllUsers:
+                        key = Registry.LocalMachine.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
+     
+                        break;
                 }
 
                 if (key == null) { return StartupState.None; }
 
                 string[] valueNames = key.GetValueNames();
-
                 if (valueNames.Length > 0)
                 {
                     foreach (string valueName in valueNames)
@@ -240,9 +285,9 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
-        public bool ChangeStateStartup(string registryName, StartupType startupType, bool is32Bit = false)
+        public bool ChangeStateStartup(string name, StartupType startupType, bool is32Bit = false)
         {
-            if (string.IsNullOrEmpty(registryName)) { return false; }
+            if (string.IsNullOrEmpty(name)) { return false; }
 
             RegistryKey? key = null;
 
@@ -264,6 +309,13 @@ namespace Computer_Maintenance.Model.Models
                             key = Registry.LocalMachine.OpenSubKey(REGISTRY_ALL_USERS_APPROWED, true);
                         }
                         break;
+                    case StartupType.StartupFolderCurrentUser:
+                        key = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_CURRENT_USER_REGISTRY_PATH_APPROWED, true);
+                        break;
+                    case StartupType.StartupFolderAllUsers:
+                        key = Registry.LocalMachine.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
+                        break;
+
                 }
 
                 if (key == null) { return false; }
@@ -274,7 +326,7 @@ namespace Computer_Maintenance.Model.Models
                 {
                     foreach (string valueName in valueNames)
                     {
-                        if (valueName == registryName)
+                        if (valueName == name)
                         {
                             if (key.GetValueKind(valueName) != RegistryValueKind.Binary) { continue; }
 

@@ -16,6 +16,13 @@ namespace Computer_Maintenance.View.Controls
         public event EventHandler DeleteSelectedItem_Folder;
         public event EventHandler ChangeSelectedItem;
         public event EventHandler ChangeSelectedItem_StateStartup_Registry;
+        public event EventHandler ChangeSelectedItem_StateStartup_Folder;
+
+        public event EventHandler OpenExplorerClicked;
+
+        public (bool isFile, string path) SelectedPath { get; set; }
+        public StartupType LastFolderSelectionSource { get; set; }
+
 
         public StartupManagementControl()
         {
@@ -43,11 +50,11 @@ namespace Computer_Maintenance.View.Controls
             {
                 listViewRegistryCurrentUser.BeginUpdate();
                 listViewRegistryCurrentUser.Items.Clear();
-                foreach (var item in startupItems)
+                foreach (StartupItemRegistry item in startupItems)
                 {
                     if (item.Type.HasFlag(StartupType.RegistryCurrentUser))
                     {
-                        var viewItem = new ListViewItem(item.NameExtracted);
+                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
                         if (item.State == StartupState.Enabled)
                         {
                             viewItem.SubItems.Add("Включено");
@@ -72,11 +79,47 @@ namespace Computer_Maintenance.View.Controls
             {
                 listViewRegistryAllUsers.BeginUpdate();
                 listViewRegistryAllUsers.Items.Clear();
-                foreach (var item in startupItems)
+                foreach (StartupItemRegistry item in startupItems)
                 {
                     if (item.Type.HasFlag(StartupType.RegistryLocalMachine))
                     {
-                        var viewItem = new ListViewItem(item.NameExtracted);
+                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
+
+                        if (item.State == StartupState.Enabled)
+                        {
+                            viewItem.SubItems.Add("Включено");
+                        }
+                        else if (item.State == StartupState.Disabled)
+                        {
+                            viewItem.SubItems.Add("Отключено");
+                        }
+                        else if (item.State == StartupState.None)
+                        {
+                            viewItem.SubItems.Add("Неизвестно");
+                        }
+
+                        viewItem.SubItems.Add(item.PathExtracted);
+
+                        viewItem.SubItems.Add(item.Is32Bit ? "32 бит" : "");
+                        viewItem.Tag = item;
+                        listViewRegistryAllUsers.Items.Add(viewItem);
+                    }
+                }
+                listViewRegistryAllUsers.EndUpdate();
+            }
+        }
+
+        public void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type)
+        {
+            if ((type & StartupType.StartupFolderCurrentUser) != 0)
+            {
+                listViewFolderCurrentUser.BeginUpdate();
+                listViewFolderCurrentUser.Items.Clear();
+                foreach (StartupItemFolder item in startupItems)
+                {
+                    if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
+                    {
+                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
                         if (item.State == StartupState.Enabled)
                         {
                             viewItem.SubItems.Add("Включено");
@@ -91,59 +134,6 @@ namespace Computer_Maintenance.View.Controls
                         }
                         viewItem.SubItems.Add(item.PathExtracted);
                         viewItem.Tag = item;
-                        listViewRegistryAllUsers.Items.Add(viewItem);
-                    }
-                }
-                listViewRegistryAllUsers.EndUpdate();
-            }
-        }
-        //    listViewRegistryCurrentUser.BeginUpdate();
-        //    listViewRegistryAllUsers.BeginUpdate();
-
-        //    listViewRegistryCurrentUser.Items.Clear();
-        //    listViewRegistryAllUsers.Items.Clear();
-
-        //    foreach (StartupItemRegistry item in startupItems)
-        //    {
-        //        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
-        //        viewItem.SubItems.Add("");
-        //        viewItem.SubItems.Add(item.PathExtracted);
-        //        viewItem.Tag = item;
-
-        //        switch (item.Type)
-        //        {
-        //            case StartupType.RegistryCurrentUser:
-        //                listViewRegistryCurrentUser.Items.Add(viewItem);
-        //                break;
-        //            case StartupType.RegistryLocalMachine:
-        //                if (item.Is32Bit)
-        //                {
-        //                    viewItem.SubItems.Add("32 бит");
-        //                }
-
-        //                listViewRegistryAllUsers.Items.Add(viewItem);
-        //                break;
-        //        }
-        //    }
-
-        //    listViewRegistryCurrentUser.EndUpdate();
-        //    listViewRegistryAllUsers.EndUpdate();
-        //}
-
-        public void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type)
-        {
-            if ((type & StartupType.StartupFolderCurrentUser) != 0)
-            {
-                listViewFolderCurrentUser.BeginUpdate();
-                listViewFolderCurrentUser.Items.Clear();
-                foreach (var item in startupItems)
-                {
-                    if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
-                    {
-                        var viewItem = new ListViewItem(item.NameExtracted);
-                        viewItem.SubItems.Add("");
-                        viewItem.SubItems.Add(item.PathExtracted);
-                        viewItem.Tag = item;
                         listViewFolderCurrentUser.Items.Add(viewItem);
                     }
                 }
@@ -154,12 +144,23 @@ namespace Computer_Maintenance.View.Controls
             {
                 listViewFolderAllUsers.BeginUpdate();
                 listViewFolderAllUsers.Items.Clear();
-                foreach (var item in startupItems)
+                foreach (StartupItemFolder item in startupItems)
                 {
                     if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
                     {
-                        var viewItem = new ListViewItem(item.NameExtracted);
-                        viewItem.SubItems.Add("");
+                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
+                        if (item.State == StartupState.Enabled)
+                        {
+                            viewItem.SubItems.Add("Включено");
+                        }
+                        else if (item.State == StartupState.Disabled)
+                        {
+                            viewItem.SubItems.Add("Отключено");
+                        }
+                        else if (item.State == StartupState.None)
+                        {
+                            viewItem.SubItems.Add("Неизвестно");
+                        }
                         viewItem.SubItems.Add(item.PathExtracted);
                         viewItem.Tag = item;
                         listViewFolderAllUsers.Items.Add(viewItem);
@@ -172,16 +173,40 @@ namespace Computer_Maintenance.View.Controls
 
         public List<StartupItemFolder> GetSelectedStartupItems_Folder()
         {
-            if (_activeListView != listViewFolderCurrentUser && _activeListView != listViewFolderAllUsers)
-                return new();
+            SelectedPath = (isFile: false, path: string.Empty);
 
-            List<StartupItemFolder> selectedItems = new List<StartupItemFolder>();
+
+            if (_activeListView == listViewFolderCurrentUser)
+            {
+                LastFolderSelectionSource = StartupType.StartupFolderCurrentUser;
+            }
+            else if (_activeListView == listViewFolderAllUsers)
+            {
+                LastFolderSelectionSource = StartupType.StartupFolderAllUsers;
+            }
+            else
+            {
+                LastFolderSelectionSource = StartupType.None;
+                return new();
+            }
+
+            List<StartupItemFolder> selectedItems = new();
 
             foreach (ListViewItem listViewItem in _activeListView.SelectedItems)
             {
                 if (listViewItem.Tag is StartupItemFolder startupItem)
                     selectedItems.Add(startupItem);
             }
+
+            if (selectedItems.Count == 1)
+            {
+                SelectedPath = (isFile: true, path: selectedItems[0].PathExtracted);
+            }
+            else if (selectedItems.Count > 1)
+            {
+                SelectedPath = (isFile: false, path: selectedItems[0].PathExtracted);
+            }
+
             return selectedItems;
         }
         public List<StartupItemRegistry> GetSelectedStartupItems_Registry()
@@ -189,6 +214,7 @@ namespace Computer_Maintenance.View.Controls
             if (_activeListView != listViewRegistryCurrentUser && _activeListView != listViewRegistryAllUsers)
                 return new();
 
+            SelectedPath = (isFile: true, path: String.Empty);
             List<StartupItemRegistry> selectedItems = new List<StartupItemRegistry>();
 
             foreach (ListViewItem listViewItem in _activeListView.SelectedItems)
@@ -196,6 +222,14 @@ namespace Computer_Maintenance.View.Controls
                 if (listViewItem.Tag is StartupItemRegistry startupItem)
                 {
                     selectedItems.Add(startupItem);
+                }
+            }
+
+            if (selectedItems.Count > 0)
+            {
+                if (selectedItems.Count == 1)
+                {
+                    SelectedPath = (isFile: true, path: selectedItems[0].PathExtracted);
                 }
             }
 
@@ -307,8 +341,13 @@ namespace Computer_Maintenance.View.Controls
         {
             ContextMenuStrip contextMenu = new ContextMenuStrip();
 
-            contextMenu.Items.Add(new ToolStripMenuItem("Добавить"));
-            contextMenu.Items.Add(new ToolStripMenuItem("Открыть в проводнике"));
+            ToolStripMenuItem openExplorer = new ToolStripMenuItem("Открыть в проводнике");
+            ToolStripMenuItem add = new ToolStripMenuItem("Добавить");
+
+            contextMenu.Items.Add(openExplorer);
+            contextMenu.Items.Add(add);
+
+            openExplorer.Click += (s, e) => OpenExplorerClicked?.Invoke(this, EventArgs.Empty);
 
             if (listView.Items.Count > 0)
             {
@@ -325,13 +364,13 @@ namespace Computer_Maintenance.View.Controls
                 if (startupType.HasFlag(StartupType.StartupFolderCurrentUser) || startupType.HasFlag(StartupType.StartupFolderAllUsers))
                 {
                     deleteItem.Click += (s, e) => DeleteSelectedItem_Folder?.Invoke(this, EventArgs.Empty);
+                    changeStateItem.Click += (s, e) => ChangeSelectedItem_StateStartup_Folder?.Invoke(this, EventArgs.Empty);
                 }
 
                 if (startupType.HasFlag(StartupType.RegistryCurrentUser) || startupType.HasFlag(StartupType.RegistryLocalMachine))
                 {
                     changeStateItem.Click += (s, e) => ChangeSelectedItem_StateStartup_Registry?.Invoke(this, EventArgs.Empty);
                 }
-
 
             }
 

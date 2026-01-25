@@ -4,6 +4,7 @@ namespace Computer_Maintenance.Model.Enums.StartupManagement
     [Flags]
     public enum StartupType
     {
+        None = 0,
         RegistryCurrentUser = 1 << 0,
         RegistryLocalMachine = 1 << 1,
         StartupFolderCurrentUser = 1 << 2,
