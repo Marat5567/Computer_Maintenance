@@ -72,12 +72,12 @@ namespace Computer_Maintenance.Presenter
                     if (item.Type.HasFlag(StartupType.RegistryCurrentUser))
                     {
                         _model.LoadStartupItems(StartupType.RegistryCurrentUser);
-                        _view.DisplayRegistryStartupItems(_model.RegistryStartupItems_CurrentUser, StartupType.RegistryCurrentUser);
+                        _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems(StartupType.RegistryCurrentUser), StartupType.RegistryCurrentUser);
                     }
                     if (item.Type.HasFlag(StartupType.RegistryLocalMachine))
                     {
                         _model.LoadStartupItems(StartupType.RegistryLocalMachine);
-                        _view.DisplayRegistryStartupItems(_model.RegistryStartupItems_AllUsers, StartupType.RegistryLocalMachine);
+                        _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems(StartupType.RegistryLocalMachine), StartupType.RegistryLocalMachine);
                     }
                 }
             }
@@ -96,12 +96,12 @@ namespace Computer_Maintenance.Presenter
                     if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
                     {
                         _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
-                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_CurrentUser, StartupType.StartupFolderCurrentUser);
+                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser), StartupType.StartupFolderCurrentUser);
                     }
                     if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
                     {
                         _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
-                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_AllUsers, StartupType.StartupFolderAllUsers);
+                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderAllUsers), StartupType.StartupFolderAllUsers);
                     }
                 }
             }
@@ -120,13 +120,13 @@ namespace Computer_Maintenance.Presenter
                     if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
                     {
                         _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
-                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_CurrentUser, StartupType.StartupFolderCurrentUser);
+                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems( StartupType.StartupFolderCurrentUser), StartupType.StartupFolderCurrentUser);
                     }
 
                     if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
                     {
                         _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
-                        _view.DisplayFolderStartupItems(_model.FolderStartupItems_AllUsers, StartupType.StartupFolderAllUsers);
+                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderAllUsers), StartupType.StartupFolderAllUsers);
                     }
                 }
             }

@@ -3,6 +3,7 @@ using Computer_Maintenance.Core.WinApi;
 using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
 using Microsoft.Win32;
+using Microsoft.Win32.TaskScheduler;
 using System.Diagnostics;
 
 namespace Computer_Maintenance.Model.Models
@@ -31,13 +32,52 @@ namespace Computer_Maintenance.Model.Models
         private const byte ENABLED_FLAG_SYSTEM = 0x06;
         private const byte DISABLED_FLAG = 0x03 ;
 
-        public List<StartupItemRegistry> RegistryStartupItems_CurrentUser { get; set; } = new List<StartupItemRegistry>();
-        public List<StartupItemRegistry> RegistryStartupItems_AllUsers { get; set; } = new List<StartupItemRegistry>();
-        public List<StartupItemFolder> FolderStartupItems_CurrentUser { get; set; } = new List<StartupItemFolder>();
-        public List<StartupItemFolder> FolderStartupItems_AllUsers { get; set; } = new List<StartupItemFolder>();
+        private List<StartupItemRegistry> RegistryStartupItems_CurrentUser { get; set; } = new List<StartupItemRegistry>();
+        private List<StartupItemRegistry> RegistryStartupItems_AllUsers { get; set; } = new List<StartupItemRegistry>();
+        private List<StartupItemFolder> FolderStartupItems_CurrentUser { get; set; } = new List<StartupItemFolder>();
+        private List<StartupItemFolder> FolderStartupItems_AllUsers { get; set; } = new List<StartupItemFolder>();
+        private List<TaskSchedulerItem> TaskSchedulerItems { get; set; } = new List<TaskSchedulerItem>();
 
         public void LoadStartupItems(StartupType type)
         {
+            switch (type)
+            {
+                case StartupType.All:
+                    RegistryStartupItems_CurrentUser.Clear();
+                    LoadRegistryStartupItems(registryRoot: Registry.CurrentUser, startupType: StartupType.RegistryCurrentUser, collectionToAdd: RegistryStartupItems_CurrentUser, path: REGISTRY_CURRENT_USER);
+
+                    RegistryStartupItems_AllUsers.Clear();
+                    LoadRegistryStartupItems(registryRoot: Registry.LocalMachine, startupType: StartupType.RegistryLocalMachine, collectionToAdd: RegistryStartupItems_AllUsers, path: REGISTRY_ALL_USERS);
+                    LoadWOW6432Node(registryRoot: Registry.LocalMachine, startupType: StartupType.RegistryLocalMachine, collectionToAdd: RegistryStartupItems_AllUsers, path: REGISTRY_WOW6432Node);
+
+                    FolderStartupItems_CurrentUser.Clear();
+                    LoadFolderStartupItems(startupType: StartupType.StartupFolderCurrentUser, collectionToAdd: FolderStartupItems_CurrentUser, FOLDER_CURRENT_USER);
+
+                    FolderStartupItems_AllUsers.Clear();
+                    LoadFolderStartupItems(startupType: StartupType.StartupFolderAllUsers, collectionToAdd: FolderStartupItems_AllUsers, FOLDER_All_USERS);
+                    break;
+                case StartupType.RegistryCurrentUser:
+                    RegistryStartupItems_CurrentUser.Clear();
+                    LoadRegistryStartupItems(registryRoot: Registry.CurrentUser, startupType: StartupType.RegistryCurrentUser, collectionToAdd: RegistryStartupItems_CurrentUser, path: REGISTRY_CURRENT_USER);
+                    break;
+                case StartupType.RegistryLocalMachine:
+                    RegistryStartupItems_AllUsers.Clear();
+                    LoadRegistryStartupItems(registryRoot: Registry.LocalMachine, startupType: StartupType.RegistryLocalMachine, collectionToAdd: RegistryStartupItems_AllUsers, path: REGISTRY_ALL_USERS);
+                    LoadWOW6432Node(registryRoot: Registry.LocalMachine, startupType: StartupType.RegistryLocalMachine, collectionToAdd: RegistryStartupItems_AllUsers, path: REGISTRY_WOW6432Node);
+                    break;
+                case StartupType.StartupFolderCurrentUser:
+                    FolderStartupItems_CurrentUser.Clear();
+                    LoadFolderStartupItems(startupType: StartupType.StartupFolderCurrentUser, collectionToAdd: FolderStartupItems_CurrentUser, FOLDER_CURRENT_USER);
+                    break;
+                case StartupType.StartupFolderAllUsers:
+                    FolderStartupItems_AllUsers.Clear();
+                    LoadFolderStartupItems(startupType: StartupType.StartupFolderAllUsers, collectionToAdd: FolderStartupItems_AllUsers, FOLDER_All_USERS);
+                    break;
+                case StartupType.TaskScheduler:
+                    TaskSchedulerItems.Clear();
+                    LoadTaskScheduler(startupType: StartupType.TaskScheduler, collectionToAdd: TaskSchedulerItems);
+                    break;
+            }
             if ((type & StartupType.RegistryCurrentUser) != 0)
             {
                 RegistryStartupItems_CurrentUser.Clear();
@@ -62,7 +102,24 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
-        public unsafe void LoadFolderStartupItems(StartupType startupType, List<StartupItemFolder> collectionToAdd, string path)
+        private void LoadTaskScheduler(StartupType startupType, List<TaskSchedulerItem> collectionToAdd)
+        {
+            using (TaskService ts = new TaskService())
+            {
+                TaskCollection tasks = ts.RootFolder.GetTasks();
+                foreach (Microsoft.Win32.TaskScheduler.Task task in tasks)
+                {
+                    TaskSchedulerItem item = new TaskSchedulerItem
+                    {
+                        Name = task.Name,
+                        Path = task.Path,
+                        State = task.State
+                    };
+                    TaskSchedulerItems.Add(item);
+                }
+            }
+        }
+        private unsafe void LoadFolderStartupItems(StartupType startupType, List<StartupItemFolder> collectionToAdd, string path)
         {
             if (!Directory.Exists(path)) return;
 
@@ -111,7 +168,7 @@ namespace Computer_Maintenance.Model.Models
             }
 
         }
-        public void LoadRegistryStartupItems(RegistryKey registryRoot, StartupType startupType, List<StartupItemRegistry> collectionToAdd, string path)
+        private void LoadRegistryStartupItems(RegistryKey registryRoot, StartupType startupType, List<StartupItemRegistry> collectionToAdd, string path)
         {
             using (RegistryKey key = registryRoot.OpenSubKey(path))
             {
@@ -133,6 +190,37 @@ namespace Computer_Maintenance.Model.Models
                                 PathExtracted = extractedPath,
                                 Type = startupType,
                                 State = GetStartupState(valueName, startupType)
+                            };
+
+                            collectionToAdd.Add(item);
+                        }
+                    }
+                }
+            }
+        }
+        private void LoadWOW6432Node(RegistryKey registryRoot, StartupType startupType, List<StartupItemRegistry> collectionToAdd, string path)
+        {
+            using (RegistryKey key = registryRoot.OpenSubKey(path))
+            {
+                if (key != null)
+                {
+                    string[] valueNames = key.GetValueNames();
+
+                    if (valueNames.Length > 0)
+                    {
+                        foreach (string valueName in valueNames)
+                        {
+                            object value = key.GetValue(valueName);
+                            string extractedPath = ExtractPath(value?.ToString());
+
+                            StartupItemRegistry item = new StartupItemRegistry
+                            {
+                                NameExtracted = GetNameExe(extractedPath),
+                                RegistryName = valueName,
+                                PathExtracted = extractedPath,
+                                Is32Bit = true,
+                                Type = startupType,
+                                State = GetStartupState(valueName, startupType, is32Bit: true)
                             };
 
                             collectionToAdd.Add(item);
@@ -176,36 +264,44 @@ namespace Computer_Maintenance.Model.Models
                 }
             }
         }
-        public void LoadWOW6432Node(RegistryKey registryRoot, StartupType startupType, List<StartupItemRegistry> collectionToAdd, string path)
+        public List<StartupItemRegistry> GetRegistryStartupItems(StartupType type)
         {
-            using (RegistryKey key = registryRoot.OpenSubKey(path))
+            if ((type & StartupType.RegistryCurrentUser) != 0 && (type & StartupType.RegistryLocalMachine) != 0)
             {
-                if (key != null)
-                {
-                    string[] valueNames = key.GetValueNames();
-
-                    if (valueNames.Length > 0)
-                    {
-                        foreach (string valueName in valueNames)
-                        {
-                            object value = key.GetValue(valueName);
-                            string extractedPath = ExtractPath(value?.ToString());
-
-                            StartupItemRegistry item = new StartupItemRegistry
-                            {
-                                NameExtracted = GetNameExe(extractedPath),
-                                RegistryName = valueName,
-                                PathExtracted = extractedPath,
-                                Is32Bit = true,
-                                Type = startupType,
-                                State = GetStartupState(valueName, startupType, is32Bit: true)
-                            };
-
-                            collectionToAdd.Add(item);
-                        }
-                    }
-                }
+                return RegistryStartupItems_CurrentUser
+                    .Concat(RegistryStartupItems_AllUsers)
+                    .ToList();
             }
+            if ((type & StartupType.RegistryCurrentUser) != 0)
+            {
+                return RegistryStartupItems_CurrentUser;
+            }
+            else if ((type & StartupType.RegistryLocalMachine) != 0)
+            {
+                return RegistryStartupItems_AllUsers;
+            }
+
+            return new List<StartupItemRegistry>();
+        }
+        public List<StartupItemFolder> GetFolderStartupItems(StartupType type)
+        {
+            if ((type & StartupType.StartupFolderCurrentUser) != 0 && (type & StartupType.StartupFolderAllUsers) != 0)
+            {
+                return FolderStartupItems_CurrentUser
+                    .Concat(FolderStartupItems_AllUsers)
+                    .ToList();
+            }
+
+            if ((type & StartupType.StartupFolderCurrentUser) != 0)
+            {
+                return FolderStartupItems_CurrentUser;
+            }
+            else if ((type & StartupType.StartupFolderAllUsers) != 0)
+            {
+                return FolderStartupItems_AllUsers;
+            }
+
+            return new List<StartupItemFolder>();
         }
 
         private StartupState GetStartupState(string registryName, StartupType startupType, bool is32Bit = false)
@@ -478,45 +574,7 @@ namespace Computer_Maintenance.Model.Models
             return Path.GetFileName(extractedPath);
         }
 
-        public List<StartupItemRegistry> GetRegistryStartupItems(StartupType type)
-        {
-            if ((type & StartupType.RegistryCurrentUser) != 0 && (type & StartupType.RegistryLocalMachine) != 0)
-            {
-                return RegistryStartupItems_CurrentUser
-                    .Concat(RegistryStartupItems_AllUsers)
-                    .ToList();
-            }
-            if ((type & StartupType.RegistryCurrentUser) != 0)
-            {
-                return RegistryStartupItems_CurrentUser;
-            }
-            else if ((type & StartupType.RegistryLocalMachine) != 0)
-            {
-                return RegistryStartupItems_AllUsers;
-            }
 
-            return new List<StartupItemRegistry>();
-        }
-        public List<StartupItemFolder> GetFolderStartupItems(StartupType type)
-        {
-            if ((type & StartupType.StartupFolderCurrentUser) != 0 && (type & StartupType.StartupFolderAllUsers) != 0)
-            {
-                return FolderStartupItems_CurrentUser
-                    .Concat(FolderStartupItems_AllUsers)
-                    .ToList();
-            }
-
-            if ((type & StartupType.StartupFolderCurrentUser) != 0)
-            {
-                return FolderStartupItems_CurrentUser;
-            }
-            else if ((type & StartupType.StartupFolderAllUsers) != 0)
-            {
-                return FolderStartupItems_AllUsers;
-            }
-
-            return new List<StartupItemFolder>();
-        }
 
         public void ShowInfo(string message)
         {

@@ -29,24 +29,25 @@
         private void InitializeComponent()
         {
             label1 = new Label();
-            tableLayoutPanel = new TableLayoutPanel();
-            panelRegistryCurrentUser = new Panel();
+            tabControlAutoRun = new TabControl();
+            tabPageRegistryCurrentUser = new TabPage();
+            tabPageRegistryAllUsers = new TabPage();
+            tabPageFolderCurrentUser = new TabPage();
+            tabPageFolderAllUsers = new TabPage();
+            tabPageTaskSheduler = new TabPage();
             listViewRegistryCurrentUser = new ListView();
-            label2 = new Label();
-            panelRegistryAllUsers = new Panel();
             listViewRegistryAllUsers = new ListView();
-            label3 = new Label();
-            panelFolderCurrentUser = new Panel();
-            label4 = new Label();
             listViewFolderCurrentUser = new ListView();
             panelFolderAllUsers = new Panel();
-            label5 = new Label();
             listViewFolderAllUsers = new ListView();
-            tableLayoutPanel.SuspendLayout();
-            panelRegistryCurrentUser.SuspendLayout();
-            panelRegistryAllUsers.SuspendLayout();
-            panelFolderCurrentUser.SuspendLayout();
+            panelFolderCurrentUser = new Panel();
+            panelRegistryAllUsers = new Panel();
+            panelRegistryCurrentUser = new Panel();
+            tabControlAutoRun.SuspendLayout();
             panelFolderAllUsers.SuspendLayout();
+            panelFolderCurrentUser.SuspendLayout();
+            panelRegistryAllUsers.SuspendLayout();
+            panelRegistryCurrentUser.SuspendLayout();
             SuspendLayout();
             // 
             // label1
@@ -54,186 +55,168 @@
             label1.Anchor = AnchorStyles.Top;
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 204);
-            label1.Location = new Point(305, 13);
+            label1.Location = new Point(287, 14);
             label1.Name = "label1";
             label1.Size = new Size(276, 25);
             label1.TabIndex = 0;
             label1.Text = "Управление автозагрузками";
             // 
-            // tableLayoutPanel
+            // tabControlAutoRun
             // 
-            tableLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.AutoScroll = true;
-            tableLayoutPanel.BackColor = Color.Transparent;
-            tableLayoutPanel.ColumnCount = 1;
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel.Controls.Add(panelRegistryCurrentUser, 0, 1);
-            tableLayoutPanel.Controls.Add(panelRegistryAllUsers, 0, 2);
-            tableLayoutPanel.Controls.Add(panelFolderCurrentUser, 0, 3);
-            tableLayoutPanel.Controls.Add(panelFolderAllUsers, 0, 4);
-            tableLayoutPanel.Location = new Point(0, 41);
-            tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.RowCount = 7;
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.Size = new Size(894, 784);
-            tableLayoutPanel.TabIndex = 1;
+            tabControlAutoRun.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tabControlAutoRun.Controls.Add(tabPageRegistryCurrentUser);
+            tabControlAutoRun.Controls.Add(tabPageRegistryAllUsers);
+            tabControlAutoRun.Controls.Add(tabPageFolderCurrentUser);
+            tabControlAutoRun.Controls.Add(tabPageFolderAllUsers);
+            tabControlAutoRun.Controls.Add(tabPageTaskSheduler);
+            tabControlAutoRun.Location = new Point(3, 58);
+            tabControlAutoRun.Name = "tabControlAutoRun";
+            tabControlAutoRun.SelectedIndex = 0;
+            tabControlAutoRun.Size = new Size(888, 542);
+            tabControlAutoRun.TabIndex = 2;
             // 
-            // panelRegistryCurrentUser
+            // tabPageRegistryCurrentUser
             // 
-            panelRegistryCurrentUser.AutoSize = true;
-            panelRegistryCurrentUser.Controls.Add(listViewRegistryCurrentUser);
-            panelRegistryCurrentUser.Controls.Add(label2);
-            panelRegistryCurrentUser.Dock = DockStyle.Fill;
-            panelRegistryCurrentUser.Location = new Point(3, 3);
-            panelRegistryCurrentUser.Name = "panelRegistryCurrentUser";
-            panelRegistryCurrentUser.Size = new Size(888, 240);
-            panelRegistryCurrentUser.TabIndex = 0;
+            tabPageRegistryCurrentUser.Location = new Point(4, 24);
+            tabPageRegistryCurrentUser.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            tabPageRegistryCurrentUser.Name = "tabPageRegistryCurrentUser";
+            tabPageRegistryCurrentUser.Size = new Size(880, 514);
+            tabPageRegistryCurrentUser.TabIndex = 0;
+            tabPageRegistryCurrentUser.Text = "Реестр (текущий пользователь)";
+            tabPageRegistryCurrentUser.UseVisualStyleBackColor = true;
+            // 
+            // tabPageRegistryAllUsers
+            // 
+            tabPageRegistryAllUsers.Location = new Point(4, 24);
+            tabPageRegistryAllUsers.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            tabPageRegistryAllUsers.Name = "tabPageRegistryAllUsers";
+            tabPageRegistryAllUsers.Size = new Size(880, 353);
+            tabPageRegistryAllUsers.TabIndex = 1;
+            tabPageRegistryAllUsers.Text = "Реестр (все пользователи)";
+            tabPageRegistryAllUsers.UseVisualStyleBackColor = true;
+            // 
+            // tabPageFolderCurrentUser
+            // 
+            tabPageFolderCurrentUser.Location = new Point(4, 24);
+            tabPageFolderCurrentUser.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            tabPageFolderCurrentUser.Name = "tabPageFolderCurrentUser";
+            tabPageFolderCurrentUser.Size = new Size(880, 353);
+            tabPageFolderCurrentUser.TabIndex = 2;
+            tabPageFolderCurrentUser.Text = "Папка автозагрузка (текущий пользователь)";
+            tabPageFolderCurrentUser.UseVisualStyleBackColor = true;
+            // 
+            // tabPageFolderAllUsers
+            // 
+            tabPageFolderAllUsers.Location = new Point(4, 24);
+            tabPageFolderAllUsers.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            tabPageFolderAllUsers.Name = "tabPageFolderAllUsers";
+            tabPageFolderAllUsers.Size = new Size(880, 353);
+            tabPageFolderAllUsers.TabIndex = 3;
+            tabPageFolderAllUsers.Text = "Папка автозагрзка (все пользователи)";
+            tabPageFolderAllUsers.UseVisualStyleBackColor = true;
+            // 
+            // tabPageTaskSheduler
+            // 
+            tabPageTaskSheduler.Location = new Point(4, 24);
+            tabPageFolderAllUsers.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            tabPageTaskSheduler.Name = "tabPageTaskSheduler";
+            tabPageTaskSheduler.Size = new Size(880, 353);
+            tabPageTaskSheduler.TabIndex = 4;
+            tabPageTaskSheduler.Text = "Планировщик задач";
+            tabPageTaskSheduler.UseVisualStyleBackColor = true;
             // 
             // listViewRegistryCurrentUser
             // 
-            listViewRegistryCurrentUser.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            listViewRegistryCurrentUser.Dock = DockStyle.Fill;
             listViewRegistryCurrentUser.FullRowSelect = true;
-            listViewRegistryCurrentUser.Location = new Point(0, 34);
             listViewRegistryCurrentUser.Name = "listViewRegistryCurrentUser";
-            listViewRegistryCurrentUser.Size = new Size(888, 206);
             listViewRegistryCurrentUser.TabIndex = 1;
             listViewRegistryCurrentUser.UseCompatibleStateImageBehavior = false;
-            listViewRegistryCurrentUser.View = System.Windows.Forms.View.Details;
             listViewRegistryCurrentUser.MouseDown += listViewRegistryCurrentUser_MouseDown;
             listViewRegistryCurrentUser.Resize += listViewRegistryCurrentUser_Resize;
             // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 204);
-            label2.Location = new Point(3, 10);
-            label2.Name = "label2";
-            label2.Size = new Size(261, 21);
-            label2.TabIndex = 0;
-            label2.Text = "Реестр (текущий пользователь)";
-            // 
-            // panelRegistryAllUsers
-            // 
-            panelRegistryAllUsers.Controls.Add(listViewRegistryAllUsers);
-            panelRegistryAllUsers.Controls.Add(label3);
-            panelRegistryAllUsers.Dock = DockStyle.Fill;
-            panelRegistryAllUsers.Location = new Point(3, 249);
-            panelRegistryAllUsers.Name = "panelRegistryAllUsers";
-            panelRegistryAllUsers.Size = new Size(888, 240);
-            panelRegistryAllUsers.TabIndex = 2;
-            // 
             // listViewRegistryAllUsers
             // 
-            listViewRegistryAllUsers.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            listViewRegistryAllUsers.Dock = DockStyle.Fill;
             listViewRegistryAllUsers.FullRowSelect = true;
-            listViewRegistryAllUsers.Location = new Point(0, 34);
             listViewRegistryAllUsers.Name = "listViewRegistryAllUsers";
-            listViewRegistryAllUsers.Size = new Size(888, 206);
             listViewRegistryAllUsers.TabIndex = 0;
             listViewRegistryAllUsers.UseCompatibleStateImageBehavior = false;
             listViewRegistryAllUsers.MouseDown += listViewRegistryAllUsers_MouseDown;
             listViewRegistryAllUsers.Resize += listViewRegistryAllUsers_Resize;
             // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 204);
-            label3.Location = new Point(3, 10);
-            label3.Name = "label3";
-            label3.Size = new Size(220, 21);
-            label3.TabIndex = 0;
-            label3.Text = "Реестр (все пользователи)";
-            // 
-            // panelFolderCurrentUser
-            // 
-            panelFolderCurrentUser.Controls.Add(label4);
-            panelFolderCurrentUser.Controls.Add(listViewFolderCurrentUser);
-            panelFolderCurrentUser.Dock = DockStyle.Fill;
-            panelFolderCurrentUser.Location = new Point(3, 495);
-            panelFolderCurrentUser.Name = "panelFolderCurrentUser";
-            panelFolderCurrentUser.Size = new Size(888, 140);
-            panelFolderCurrentUser.TabIndex = 3;
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 204);
-            label4.Location = new Point(3, 10);
-            label4.Name = "label4";
-            label4.Size = new Size(366, 21);
-            label4.TabIndex = 1;
-            label4.Text = "Папка автозагрузки (текущий пользователь)";
-            // 
             // listViewFolderCurrentUser
             // 
-            listViewFolderCurrentUser.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            listViewFolderCurrentUser.Dock = DockStyle.Fill;
             listViewFolderCurrentUser.FullRowSelect = true;
-            listViewFolderCurrentUser.Location = new Point(0, 34);
             listViewFolderCurrentUser.Name = "listViewFolderCurrentUser";
-            listViewFolderCurrentUser.Size = new Size(888, 100);
             listViewFolderCurrentUser.TabIndex = 0;
             listViewFolderCurrentUser.UseCompatibleStateImageBehavior = false;
             listViewFolderCurrentUser.MouseDown += listViewFolderCurrentUser_MouseDown;
             listViewFolderCurrentUser.Resize += listViewFolderCurrentUser_Resize;
-            // 
-            // panelFolderAllUsers
-            // 
-            panelFolderAllUsers.Controls.Add(label5);
-            panelFolderAllUsers.Controls.Add(listViewFolderAllUsers);
-            panelFolderAllUsers.Dock = DockStyle.Fill;
-            panelFolderAllUsers.Location = new Point(3, 641);
-            panelFolderAllUsers.Name = "panelFolderAllUsers";
-            panelFolderAllUsers.Size = new Size(888, 140);
-            panelFolderAllUsers.TabIndex = 4;
-            // 
-            // label5
-            // 
-            label5.AutoSize = true;
-            label5.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 204);
-            label5.Location = new Point(3, 13);
-            label5.Name = "label5";
-            label5.Size = new Size(325, 21);
-            label5.TabIndex = 1;
-            label5.Text = "Папка автозагрузки (все пользователи)";
+
             // 
             // listViewFolderAllUsers
             // 
-            listViewFolderAllUsers.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            listViewFolderAllUsers.Dock = DockStyle.Fill;
             listViewFolderAllUsers.FullRowSelect = true;
-            listViewFolderAllUsers.Location = new Point(0, 37);
             listViewFolderAllUsers.Name = "listViewFolderAllUsers";
-            listViewFolderAllUsers.Size = new Size(888, 100);
             listViewFolderAllUsers.TabIndex = 0;
             listViewFolderAllUsers.UseCompatibleStateImageBehavior = false;
             listViewFolderAllUsers.MouseDown += listViewFolderAllUsers_MouseDown;
             listViewFolderAllUsers.Resize += listViewFolderAllUsers_Resize;
+            // 
+            // panelFolderAllUsers
+            // 
+            panelFolderAllUsers.Controls.Add(listViewFolderAllUsers);
+            panelFolderAllUsers.Dock = DockStyle.Fill;
+            panelFolderAllUsers.Name = "panelFolderAllUsers";
+            panelFolderAllUsers.TabIndex = 4;
+            // 
+            // panelFolderCurrentUser
+            // 
+            panelFolderCurrentUser.Controls.Add(listViewFolderCurrentUser);
+            panelFolderCurrentUser.Dock = DockStyle.Fill;
+            panelFolderCurrentUser.Name = "panelFolderCurrentUser";
+            panelFolderCurrentUser.TabIndex = 3;
+            // 
+            // panelRegistryAllUsers
+            // 
+            panelRegistryAllUsers.Controls.Add(listViewRegistryAllUsers);
+            panelRegistryAllUsers.Dock = DockStyle.Fill;
+            panelRegistryAllUsers.Name = "panelRegistryAllUsers";
+            panelRegistryAllUsers.TabIndex = 2;
+
+            // 
+            // panelRegistryCurrentUser
+            // 
+            panelRegistryCurrentUser.Controls.Add(listViewRegistryCurrentUser);
+            panelRegistryCurrentUser.Dock = DockStyle.Fill;
+            panelRegistryCurrentUser.Name = "panelRegistryCurrentUser";
+            panelRegistryCurrentUser.TabIndex = 0;
+
             // 
             // StartupManagementControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoScroll = true;
-            Controls.Add(tableLayoutPanel);
+
+            Controls.Add(tabControlAutoRun);
             Controls.Add(label1);
+
             Name = "StartupManagementControl";
-            Size = new Size(894, 861);
+            Size = new Size(894, 600);
             Load += StartupManagementControl_Load;
-            tableLayoutPanel.ResumeLayout(false);
-            tableLayoutPanel.PerformLayout();
-            panelRegistryCurrentUser.ResumeLayout(false);
-            panelRegistryCurrentUser.PerformLayout();
-            panelRegistryAllUsers.ResumeLayout(false);
-            panelRegistryAllUsers.PerformLayout();
-            panelFolderCurrentUser.ResumeLayout(false);
-            panelFolderCurrentUser.PerformLayout();
+            tabControlAutoRun.ResumeLayout(false);
             panelFolderAllUsers.ResumeLayout(false);
             panelFolderAllUsers.PerformLayout();
+            panelFolderCurrentUser.ResumeLayout(false);
+            panelFolderCurrentUser.PerformLayout();
+            panelRegistryAllUsers.ResumeLayout(false);
+            panelRegistryAllUsers.PerformLayout();
+            panelRegistryCurrentUser.ResumeLayout(false);
+            panelRegistryCurrentUser.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -241,18 +224,19 @@
         #endregion
 
         private Label label1;
-        private TableLayoutPanel tableLayoutPanel;
-        private Panel panelRegistryCurrentUser;
-        private Label label2;
         private ListView listViewRegistryCurrentUser;
-        private Panel panelRegistryAllUsers;
         private ListView listViewRegistryAllUsers;
-        private Label label3;
-        private Panel panelFolderCurrentUser;
         private ListView listViewFolderCurrentUser;
-        private Label label4;
-        private Panel panelFolderAllUsers;
         private ListView listViewFolderAllUsers;
-        private Label label5;
+        private TabControl tabControlAutoRun;
+        private TabPage tabPageRegistryCurrentUser;
+        private TabPage tabPageRegistryAllUsers;
+        private TabPage tabPageFolderCurrentUser;
+        private TabPage tabPageFolderAllUsers;
+        private TabPage tabPageTaskSheduler;
+        private Panel panelFolderAllUsers;
+        private Panel panelFolderCurrentUser;
+        private Panel panelRegistryAllUsers;
+        private Panel panelRegistryCurrentUser;
     }
 }

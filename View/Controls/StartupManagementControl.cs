@@ -34,13 +34,22 @@ namespace Computer_Maintenance.View.Controls
             listViewRegistryCurrentUser.MouseDown += ListView_Activate;
             listViewRegistryAllUsers.MouseDown += ListView_Activate;
         }
-
+        private void InitTabControl()
+        {
+            tabPageRegistryCurrentUser.Controls.Add(panelRegistryCurrentUser);
+            tabPageRegistryAllUsers.Controls.Add(panelRegistryAllUsers);
+            tabPageFolderCurrentUser.Controls.Add(panelFolderCurrentUser);
+            tabPageFolderAllUsers.Controls.Add(panelFolderAllUsers);
+            //tabPageTaskSheduler.Controls.Add(panelTaskSheduler);
+        }
         private void StartupManagementControl_Load(object sender, EventArgs e)
         {
             Init_ListViewRegistryCurrentUser();
             Init_ListViewRegistryAllUsers();
             Init_ListViewFolderCurrentUser();
             Init_ListViewFolderAllUsers();
+
+            InitTabControl();
 
             LoadControl?.Invoke(this, EventArgs.Empty);
         }
@@ -239,8 +248,8 @@ namespace Computer_Maintenance.View.Controls
         private void Init_ListViewFolderCurrentUser()
         {
             listViewFolderCurrentUser.View = System.Windows.Forms.View.Details;
-            listViewFolderCurrentUser.Columns.Add("Имя", 200);
-            listViewFolderCurrentUser.Columns.Add("Состояние", 100);
+            listViewFolderCurrentUser.Columns.Add("Имя", 180);
+            listViewFolderCurrentUser.Columns.Add("Состояние", 110);
             listViewFolderCurrentUser.Columns.Add("Путь", 600);
             listViewFolderCurrentUser.BackColor = Color.FromArgb(146, 156, 155);
             listViewFolderCurrentUser.ForeColor = Color.Black;
@@ -249,8 +258,8 @@ namespace Computer_Maintenance.View.Controls
         private void Init_ListViewFolderAllUsers()
         {
             listViewFolderAllUsers.View = System.Windows.Forms.View.Details;
-            listViewFolderAllUsers.Columns.Add("Имя", 200);
-            listViewFolderAllUsers.Columns.Add("Состояние", 100);
+            listViewFolderAllUsers.Columns.Add("Имя", 180);
+            listViewFolderAllUsers.Columns.Add("Состояние", 110);
             listViewFolderAllUsers.Columns.Add("Путь", 600);
             listViewFolderAllUsers.BackColor = Color.FromArgb(146, 156, 155);
             listViewFolderAllUsers.ForeColor = Color.Black;
@@ -259,8 +268,8 @@ namespace Computer_Maintenance.View.Controls
         private void Init_ListViewRegistryCurrentUser()
         {
             listViewRegistryCurrentUser.View = System.Windows.Forms.View.Details;
-            listViewRegistryCurrentUser.Columns.Add("Имя", 200);
-            listViewRegistryCurrentUser.Columns.Add("Состояние", 100);
+            listViewRegistryCurrentUser.Columns.Add("Имя", 180);
+            listViewRegistryCurrentUser.Columns.Add("Состояние", 110);
             listViewRegistryCurrentUser.Columns.Add("Путь", 600);
             listViewRegistryCurrentUser.BackColor = Color.FromArgb(146, 156, 155);
             listViewRegistryCurrentUser.ForeColor = Color.Black;
@@ -269,10 +278,10 @@ namespace Computer_Maintenance.View.Controls
         private void Init_ListViewRegistryAllUsers()
         {
             listViewRegistryAllUsers.View = System.Windows.Forms.View.Details;
-            listViewRegistryAllUsers.Columns.Add("Имя", 200);
-            listViewRegistryAllUsers.Columns.Add("Состояние", 100);
+            listViewRegistryAllUsers.Columns.Add("Имя", 180);
+            listViewRegistryAllUsers.Columns.Add("Состояние", 110);
             listViewRegistryAllUsers.Columns.Add("Путь", 600);
-            listViewRegistryAllUsers.Columns.Add("Разрядность", 100);
+            listViewRegistryAllUsers.Columns.Add("Разрядность", 120);
             listViewRegistryAllUsers.BackColor = Color.FromArgb(146, 156, 155);
             listViewRegistryAllUsers.ForeColor = Color.Black;
         }
