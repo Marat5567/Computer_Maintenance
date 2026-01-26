@@ -30,6 +30,8 @@ namespace Computer_Maintenance.Presenter
             List<StartupItemFolder> folderItems = _model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
             _view.DisplayFolderStartupItems(folderItems, StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
 
+            List<TaskSchedulerItem> taskSchedulerItems = _model.GetTaskSchedulerItems();
+            _view.DisplayTaskSchedulerItems(taskSchedulerItems);
 
         }
         private void OnOpenExplorerClicked(object s, EventArgs e)

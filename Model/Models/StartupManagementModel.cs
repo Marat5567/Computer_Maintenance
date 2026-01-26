@@ -55,6 +55,9 @@ namespace Computer_Maintenance.Model.Models
 
                     FolderStartupItems_AllUsers.Clear();
                     LoadFolderStartupItems(startupType: StartupType.StartupFolderAllUsers, collectionToAdd: FolderStartupItems_AllUsers, FOLDER_All_USERS);
+
+                    TaskSchedulerItems.Clear();
+                    LoadTaskSchedulerItems(startupType: StartupType.TaskScheduler, TaskSchedulerItems);
                     break;
                 case StartupType.RegistryCurrentUser:
                     RegistryStartupItems_CurrentUser.Clear();
@@ -75,7 +78,7 @@ namespace Computer_Maintenance.Model.Models
                     break;
                 case StartupType.TaskScheduler:
                     TaskSchedulerItems.Clear();
-                    LoadTaskScheduler(startupType: StartupType.TaskScheduler, collectionToAdd: TaskSchedulerItems);
+                    LoadTaskSchedulerItems(startupType: StartupType.TaskScheduler, TaskSchedulerItems);
                     break;
             }
             if ((type & StartupType.RegistryCurrentUser) != 0)
@@ -102,21 +105,41 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
-        private void LoadTaskScheduler(StartupType startupType, List<TaskSchedulerItem> collectionToAdd)
+        private void LoadTaskSchedulerItems(StartupType startupType, List<TaskSchedulerItem> collectionToAdd)
         {
             using (TaskService ts = new TaskService())
             {
                 TaskCollection tasks = ts.RootFolder.GetTasks();
                 foreach (Microsoft.Win32.TaskScheduler.Task task in tasks)
                 {
+                    string pathExtracted = ExtractPath(GetExecutablePathFromTask(task));
                     TaskSchedulerItem item = new TaskSchedulerItem
                     {
-                        Name = task.Name,
-                        Path = task.Path,
-                        State = task.State
+                        File = task.Name,
+                        Name = GetNameExe(pathExtracted),
+                        Path = pathExtracted,
+                        State = task.State,
+                        Type = startupType,
                     };
                     TaskSchedulerItems.Add(item);
                 }
+            }
+            string GetExecutablePathFromTask(Microsoft.Win32.TaskScheduler.Task task)
+            {
+                try
+                {
+                    foreach (Microsoft.Win32.TaskScheduler.Action? action in task.Definition.Actions)
+                    {
+                        if (action is ExecAction execAction)
+                        {
+                            return execAction.Path;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+                return String.Empty;
             }
         }
         private unsafe void LoadFolderStartupItems(StartupType startupType, List<StartupItemFolder> collectionToAdd, string path)
@@ -302,6 +325,11 @@ namespace Computer_Maintenance.Model.Models
             }
 
             return new List<StartupItemFolder>();
+        }
+
+        public List<TaskSchedulerItem> GetTaskSchedulerItems()
+        {
+            return TaskSchedulerItems;
         }
 
         private StartupState GetStartupState(string registryName, StartupType startupType, bool is32Bit = false)
@@ -537,7 +565,7 @@ namespace Computer_Maintenance.Model.Models
 
             if (rawStr.Length > 0)
             {
-                if (rawStr[0] == '"')
+                if (rawStr[0] == '"' && rawStr[1] != '"')
                 {
                     int index_TwoQuotes = rawStr.IndexOf('"', 1);
                     if (index_TwoQuotes == -1) //Если не найдено второй кавычки, ищем пустой символ
@@ -549,7 +577,23 @@ namespace Computer_Maintenance.Model.Models
                         return rawStr.Substring(1, index_TwoQuotes - 1);
                     }
                 }
-                else
+                else if (rawStr[0] == '"' && rawStr[1] == '"')
+                {
+                    int index = rawStr.IndexOf('"', 2);
+
+                    if (index == -1)
+                    {
+                        return rawStr.Substring(2);
+                    }
+                    else
+                    {
+                        return rawStr.Substring(2, index - 2);
+                    }
+                }
+                else if (rawStr[0] != '"')
+                {
+                    return rawStr;
+                }
                 {
                     int index_EmptyChar = rawStr.IndexOf(' ');
                     if (index_EmptyChar == -1)
@@ -570,8 +614,8 @@ namespace Computer_Maintenance.Model.Models
         {
             if (string.IsNullOrEmpty(extractedPath)) { return String.Empty; }
 
-            extractedPath.Trim();
             return Path.GetFileName(extractedPath);
+
         }
 
 

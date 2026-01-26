@@ -1,7 +1,7 @@
-﻿using Computer_Maintenance.Model.Config;
-using Computer_Maintenance.Model.Enums.StartupManagement;
+﻿using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
 using Computer_Maintenance.View.Interfaces;
+using Microsoft.Win32.TaskScheduler;
 
 namespace Computer_Maintenance.View.Controls
 {
@@ -33,6 +33,7 @@ namespace Computer_Maintenance.View.Controls
             listViewFolderAllUsers.MouseDown += ListView_Activate;
             listViewRegistryCurrentUser.MouseDown += ListView_Activate;
             listViewRegistryAllUsers.MouseDown += ListView_Activate;
+            listViewTaskScheduler.MouseDown += ListView_Activate;
         }
         private void InitTabControl()
         {
@@ -40,7 +41,7 @@ namespace Computer_Maintenance.View.Controls
             tabPageRegistryAllUsers.Controls.Add(panelRegistryAllUsers);
             tabPageFolderCurrentUser.Controls.Add(panelFolderCurrentUser);
             tabPageFolderAllUsers.Controls.Add(panelFolderAllUsers);
-            //tabPageTaskSheduler.Controls.Add(panelTaskSheduler);
+            tabPageTaskSсheduler.Controls.Add(panelTaskScheduler);
         }
         private void StartupManagementControl_Load(object sender, EventArgs e)
         {
@@ -48,6 +49,7 @@ namespace Computer_Maintenance.View.Controls
             Init_ListViewRegistryAllUsers();
             Init_ListViewFolderCurrentUser();
             Init_ListViewFolderAllUsers();
+            Init_ListViewTaskScheduler();
 
             InitTabControl();
 
@@ -179,7 +181,44 @@ namespace Computer_Maintenance.View.Controls
             }
         }
 
+        public void DisplayTaskSchedulerItems(List<TaskSchedulerItem> startupItems)
+        {
+            listViewTaskScheduler.BeginUpdate();
 
+            listViewTaskScheduler.Items.Clear();
+            foreach (TaskSchedulerItem item in startupItems)
+            {
+                ListViewItem viewItem = new ListViewItem(item.File);
+                viewItem.SubItems.Add(item.Name);
+
+                if (item.State == TaskState.Running)
+                {
+                    viewItem.SubItems.Add("Работает");
+                }
+                else if (item.State == TaskState.Queued)
+                {
+                    viewItem.SubItems.Add("В очереди");
+                }
+                else if (item.State == TaskState.Disabled)
+                {
+                    viewItem.SubItems.Add("Отключен");
+                }
+                else if (item.State == TaskState.Ready)
+                {
+                    viewItem.SubItems.Add("Готово");
+                }
+                else if (item.State == TaskState.Unknown)
+                {
+                    viewItem.SubItems.Add("Неизвестно");
+                }
+                viewItem.SubItems.Add(item.Path);
+                viewItem.Tag = item;
+
+                listViewTaskScheduler.Items.Add(viewItem);
+            }
+
+            listViewTaskScheduler.EndUpdate();
+        }
         public List<StartupItemFolder> GetSelectedStartupItems_Folder()
         {
             SelectedPath = (isFile: false, path: string.Empty);
@@ -251,7 +290,7 @@ namespace Computer_Maintenance.View.Controls
             listViewFolderCurrentUser.Columns.Add("Имя", 180);
             listViewFolderCurrentUser.Columns.Add("Состояние", 110);
             listViewFolderCurrentUser.Columns.Add("Путь", 600);
-            listViewFolderCurrentUser.BackColor = Color.FromArgb(146, 156, 155);
+            listViewFolderCurrentUser.BackColor = Color.FromArgb(209, 205, 205);
             listViewFolderCurrentUser.ForeColor = Color.Black;
         }
 
@@ -261,7 +300,7 @@ namespace Computer_Maintenance.View.Controls
             listViewFolderAllUsers.Columns.Add("Имя", 180);
             listViewFolderAllUsers.Columns.Add("Состояние", 110);
             listViewFolderAllUsers.Columns.Add("Путь", 600);
-            listViewFolderAllUsers.BackColor = Color.FromArgb(146, 156, 155);
+            listViewFolderAllUsers.BackColor = Color.FromArgb(209, 205, 205);
             listViewFolderAllUsers.ForeColor = Color.Black;
         }
 
@@ -271,7 +310,7 @@ namespace Computer_Maintenance.View.Controls
             listViewRegistryCurrentUser.Columns.Add("Имя", 180);
             listViewRegistryCurrentUser.Columns.Add("Состояние", 110);
             listViewRegistryCurrentUser.Columns.Add("Путь", 600);
-            listViewRegistryCurrentUser.BackColor = Color.FromArgb(146, 156, 155);
+            listViewRegistryCurrentUser.BackColor = Color.FromArgb(209, 205, 205);
             listViewRegistryCurrentUser.ForeColor = Color.Black;
         }
 
@@ -282,32 +321,57 @@ namespace Computer_Maintenance.View.Controls
             listViewRegistryAllUsers.Columns.Add("Состояние", 110);
             listViewRegistryAllUsers.Columns.Add("Путь", 600);
             listViewRegistryAllUsers.Columns.Add("Разрядность", 120);
-            listViewRegistryAllUsers.BackColor = Color.FromArgb(146, 156, 155);
+            listViewRegistryAllUsers.BackColor = Color.FromArgb(209, 205, 205);
             listViewRegistryAllUsers.ForeColor = Color.Black;
         }
-
+        private void Init_ListViewTaskScheduler()
+        {
+            listViewTaskScheduler.View = System.Windows.Forms.View.Details;
+            listViewTaskScheduler.Columns.Add("Файл", 150);
+            listViewTaskScheduler.Columns.Add("Имя", 180);
+            listViewTaskScheduler.Columns.Add("Состояние", 110);
+            listViewTaskScheduler.Columns.Add("Путь", 600);
+            listViewTaskScheduler.BackColor = Color.FromArgb(209, 205, 205);
+            listViewTaskScheduler.ForeColor = Color.Black;
+        }
         private void listViewFolderCurrentUser_Resize(object sender, EventArgs e)
         {
             if (listViewFolderCurrentUser.Columns.Count >= 3)
+            {
                 listViewFolderCurrentUser.Columns[2].Width = listViewFolderCurrentUser.ClientSize.Width - listViewFolderCurrentUser.Columns[0].Width - listViewFolderCurrentUser.Columns[1].Width;
+            }
         }
 
         private void listViewFolderAllUsers_Resize(object sender, EventArgs e)
         {
             if (listViewFolderAllUsers.Columns.Count >= 3)
+            {
                 listViewFolderAllUsers.Columns[2].Width = listViewFolderAllUsers.ClientSize.Width - listViewFolderAllUsers.Columns[0].Width - listViewFolderAllUsers.Columns[1].Width;
+            }
         }
 
         private void listViewRegistryCurrentUser_Resize(object sender, EventArgs e)
         {
             if (listViewRegistryCurrentUser.Columns.Count >= 3)
+            {
                 listViewRegistryCurrentUser.Columns[2].Width = listViewRegistryCurrentUser.ClientSize.Width - listViewRegistryCurrentUser.Columns[0].Width - listViewRegistryCurrentUser.Columns[1].Width;
+            }
         }
 
         private void listViewRegistryAllUsers_Resize(object sender, EventArgs e)
         {
             if (listViewRegistryAllUsers.Columns.Count >= 4)
+            {
                 listViewRegistryAllUsers.Columns[2].Width = listViewRegistryAllUsers.ClientSize.Width - (listViewRegistryAllUsers.Columns[0].Width + listViewRegistryAllUsers.Columns[1].Width + listViewRegistryAllUsers.Columns[3].Width);
+            }
+        }
+
+        private void listViewTaskScheduler_Resize(object sender, EventArgs e)
+        {
+            if (listViewTaskScheduler.Columns.Count >= 4)
+            {
+                listViewTaskScheduler.Columns[3].Width = listViewTaskScheduler.ClientSize.Width - (listViewTaskScheduler.Columns[0].Width + listViewTaskScheduler.Columns[1].Width + listViewTaskScheduler.Columns[2].Width);
+            }
         }
 
         private void listViewFolderCurrentUser_MouseDown(object sender, MouseEventArgs e)
@@ -344,6 +408,11 @@ namespace Computer_Maintenance.View.Controls
                 ContextMenuStrip contextMenu = CreateContextMenuItem(listViewRegistryAllUsers, StartupType.RegistryLocalMachine);
                 contextMenu.Show(listViewRegistryAllUsers, e.Location);
             }
+        }
+
+        private void listViewTaskScheduler_MouseDown(object sender, MouseEventArgs e)
+        {
+
         }
 
         private ContextMenuStrip CreateContextMenuItem(ListView listView, StartupType startupType)

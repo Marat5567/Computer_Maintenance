@@ -19,6 +19,7 @@ namespace Computer_Maintenance.View.Interfaces
         public StartupType LastFolderSelectionSource { get; set; }
         void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems, StartupType type);
         void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type);
+        void DisplayTaskSchedulerItems(List<TaskSchedulerItem> startupItems);
         List<StartupItemFolder> GetSelectedStartupItems_Folder();
         List<StartupItemRegistry> GetSelectedStartupItems_Registry();
     }
