@@ -265,6 +265,7 @@ namespace Computer_Maintenance.Model.Models
             else
             {
                 string directoryPath = String.Empty;
+
                 switch (startupType)
                 {
                     case StartupType.StartupFolderCurrentUser:
@@ -274,17 +275,15 @@ namespace Computer_Maintenance.Model.Models
                         directoryPath = FOLDER_All_USERS;
                         break;
                     case StartupType.None:
-                        return;
+                        break;
                     default:
                         directoryPath = Path.GetDirectoryName(path);
                         break;
                 }
 
+                if (string.IsNullOrEmpty(directoryPath)) { return; }
                 
-                if (Directory.Exists(directoryPath))
-                {
-                    Process.Start("explorer.exe", $"\"{directoryPath}\"");
-                }
+                Process.Start("explorer.exe", $"\"{directoryPath}\"");
             }
         }
         public List<StartupItemRegistry> GetRegistryStartupItems(StartupType type)

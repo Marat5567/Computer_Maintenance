@@ -24,62 +24,38 @@ namespace Computer_Maintenance.Presenter
         {
             _model.LoadStartupItems(StartupType.All);
 
-            List<StartupItemRegistry> registryItems = _model.GetRegistryStartupItems(StartupType.RegistryCurrentUser | StartupType.RegistryLocalMachine);
-            _view.DisplayRegistryStartupItems(registryItems, StartupType.RegistryCurrentUser | StartupType.RegistryLocalMachine);
+            StartupType typeRegistry = StartupType.RegistryCurrentUser | StartupType.RegistryLocalMachine;
+            StartupType typeFolder = StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers;
 
-            List<StartupItemFolder> folderItems = _model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
-            _view.DisplayFolderStartupItems(folderItems, StartupType.StartupFolderCurrentUser | StartupType.StartupFolderAllUsers);
+            _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems(typeRegistry), typeRegistry);
+            _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(typeFolder), typeFolder);
 
-            List<TaskSchedulerItem> taskSchedulerItems = _model.GetTaskSchedulerItems();
-            _view.DisplayTaskSchedulerItems(taskSchedulerItems);
-
+            _view.DisplayTaskSchedulerItems(_model.GetTaskSchedulerItems());
         }
-        private void OnOpenExplorerClicked(object s, EventArgs e)
-        {
-            _view.GetSelectedStartupItems_Folder();
-
-            if (_view.LastFolderSelectionSource != StartupType.None)
-            {
-                _model.OpenPathToExplorer(
-                    _view.SelectedPath.isFile,
-                    _view.SelectedPath.path,
-                    _view.LastFolderSelectionSource
-                );
-                return;
-            }
-
-            _view.GetSelectedStartupItems_Registry();
-
-            if (!string.IsNullOrEmpty(_view.SelectedPath.path))
-            {
-                _model.OpenPathToExplorer(
-                    true,
-                    _view.SelectedPath.path,
-                    StartupType.None
-                );
-            }
-        }
-
 
         private void OnChangeSelectedItem_StateStartup_Registry(object s, EventArgs e)
         {
-            List<StartupItemRegistry> items = _view.GetSelectedStartupItems_Registry();
+            List<object> items = _view.GetSelectedItems();
+            if (items.Count == 0) { return; }
 
-            foreach (StartupItemRegistry item in items)
+            if (items[0] is StartupItemRegistry)
             {
-                bool changed = _model.ChangeStateStartup(item.RegistryName, item.Type, item.Is32Bit);
-
-                if (changed)
+                foreach (StartupItemRegistry item in items)
                 {
-                    if (item.Type.HasFlag(StartupType.RegistryCurrentUser))
+                    bool changed = _model.ChangeStateStartup(item.RegistryName, item.Type, item.Is32Bit);
+
+                    if (changed)
                     {
-                        _model.LoadStartupItems(StartupType.RegistryCurrentUser);
-                        _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems(StartupType.RegistryCurrentUser), StartupType.RegistryCurrentUser);
-                    }
-                    if (item.Type.HasFlag(StartupType.RegistryLocalMachine))
-                    {
-                        _model.LoadStartupItems(StartupType.RegistryLocalMachine);
-                        _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems(StartupType.RegistryLocalMachine), StartupType.RegistryLocalMachine);
+                        if (item.Type.HasFlag(StartupType.RegistryCurrentUser))
+                        {
+                            _model.LoadStartupItems(StartupType.RegistryCurrentUser);
+                            _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems(StartupType.RegistryCurrentUser), StartupType.RegistryCurrentUser);
+                        }
+                        if (item.Type.HasFlag(StartupType.RegistryLocalMachine))
+                        {
+                            _model.LoadStartupItems(StartupType.RegistryLocalMachine);
+                            _view.DisplayRegistryStartupItems(_model.GetRegistryStartupItems(StartupType.RegistryLocalMachine), StartupType.RegistryLocalMachine);
+                        }
                     }
                 }
             }
@@ -87,23 +63,27 @@ namespace Computer_Maintenance.Presenter
 
         private void OnChangeSelectedItem_StateStartup_Folder(object s, EventArgs e)
         {
-            List<StartupItemFolder> items = _view.GetSelectedStartupItems_Folder();
+            List<object> items = _view.GetSelectedItems();
+            if (items.Count == 0) { return; }
 
-            foreach (StartupItemFolder item in items)
+            if (items[0] is StartupItemFolder)
             {
-                bool changed = _model.ChangeStateStartup(item.NameExtracted, item.Type);
-
-                if (changed)
+                foreach (StartupItemFolder item in items)
                 {
-                    if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
+                    bool changed = _model.ChangeStateStartup(item.NameExtracted, item.Type);
+
+                    if (changed)
                     {
-                        _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
-                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser), StartupType.StartupFolderCurrentUser);
-                    }
-                    if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
-                    {
-                        _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
-                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderAllUsers), StartupType.StartupFolderAllUsers);
+                        if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
+                        {
+                            _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
+                            _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser), StartupType.StartupFolderCurrentUser);
+                        }
+                        if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
+                        {
+                            _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
+                            _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderAllUsers), StartupType.StartupFolderAllUsers);
+                        }
                     }
                 }
             }
@@ -111,30 +91,37 @@ namespace Computer_Maintenance.Presenter
 
         private void OnDeleteSelectedItem_Folder(object s, EventArgs e)
         {
-            List<StartupItemFolder> items = _view.GetSelectedStartupItems_Folder();
+            List<object> items = _view.GetSelectedItems();
+            if (items.Count == 0) { return; }
 
-            foreach (StartupItemFolder item in items)
+            if (items[0] is StartupItemFolder)
             {
-                bool deleted = _model.DeleteFolderStartupRecord(item.PathExtracted);
-
-                if (deleted)
+                foreach (StartupItemFolder item in items)
                 {
-                    if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
-                    {
-                        _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
-                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems( StartupType.StartupFolderCurrentUser), StartupType.StartupFolderCurrentUser);
-                    }
+                    bool deleted = _model.DeleteFolderStartupRecord(item.PathExtracted);
 
-                    if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
+                    if (deleted)
                     {
-                        _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
-                        _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderAllUsers), StartupType.StartupFolderAllUsers);
+                        if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
+                        {
+                            _model.LoadStartupItems(StartupType.StartupFolderCurrentUser);
+                            _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderCurrentUser), StartupType.StartupFolderCurrentUser);
+                        }
+
+                        if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
+                        {
+                            _model.LoadStartupItems(StartupType.StartupFolderAllUsers);
+                            _view.DisplayFolderStartupItems(_model.GetFolderStartupItems(StartupType.StartupFolderAllUsers), StartupType.StartupFolderAllUsers);
+                        }
                     }
                 }
             }
-
         }
-
+        private void OnOpenExplorerClicked(object s, EventArgs e)
+        {
+            _view.GetSelectedItems();
+            _model.OpenPathToExplorer(_view.SelectedPath.isFile, _view.SelectedPath.path, _view.LastFolderSelectionSource);
+        }
 
     }
 }

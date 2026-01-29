@@ -45,6 +45,7 @@
             panelRegistryAllUsers = new Panel();
             panelRegistryCurrentUser = new Panel();
             panelTaskScheduler = new Panel();
+            buttonRefresh = new Button();
             tabControlAutoRun.SuspendLayout();
             panelFolderAllUsers.SuspendLayout();
             panelFolderCurrentUser.SuspendLayout();
@@ -72,10 +73,10 @@
             tabControlAutoRun.Controls.Add(tabPageFolderCurrentUser);
             tabControlAutoRun.Controls.Add(tabPageFolderAllUsers);
             tabControlAutoRun.Controls.Add(tabPageTaskSсheduler);
-            tabControlAutoRun.Location = new Point(3, 58);
+            tabControlAutoRun.Location = new Point(3, 102);
             tabControlAutoRun.Name = "tabControlAutoRun";
             tabControlAutoRun.SelectedIndex = 0;
-            tabControlAutoRun.Size = new Size(888, 542);
+            tabControlAutoRun.Size = new Size(888, 498);
             tabControlAutoRun.TabIndex = 2;
             // 
             // tabPageRegistryCurrentUser
@@ -83,7 +84,7 @@
             tabPageRegistryCurrentUser.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             tabPageRegistryCurrentUser.Location = new Point(4, 24);
             tabPageRegistryCurrentUser.Name = "tabPageRegistryCurrentUser";
-            tabPageRegistryCurrentUser.Size = new Size(880, 514);
+            tabPageRegistryCurrentUser.Size = new Size(880, 470);
             tabPageRegistryCurrentUser.TabIndex = 0;
             tabPageRegistryCurrentUser.Text = "Реестр (текущий пользователь)";
             tabPageRegistryCurrentUser.UseVisualStyleBackColor = true;
@@ -93,7 +94,7 @@
             tabPageRegistryAllUsers.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             tabPageRegistryAllUsers.Location = new Point(4, 24);
             tabPageRegistryAllUsers.Name = "tabPageRegistryAllUsers";
-            tabPageRegistryAllUsers.Size = new Size(880, 514);
+            tabPageRegistryAllUsers.Size = new Size(880, 470);
             tabPageRegistryAllUsers.TabIndex = 1;
             tabPageRegistryAllUsers.Text = "Реестр (все пользователи)";
             tabPageRegistryAllUsers.UseVisualStyleBackColor = true;
@@ -103,7 +104,7 @@
             tabPageFolderCurrentUser.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             tabPageFolderCurrentUser.Location = new Point(4, 24);
             tabPageFolderCurrentUser.Name = "tabPageFolderCurrentUser";
-            tabPageFolderCurrentUser.Size = new Size(880, 514);
+            tabPageFolderCurrentUser.Size = new Size(880, 470);
             tabPageFolderCurrentUser.TabIndex = 2;
             tabPageFolderCurrentUser.Text = "Папка автозагрузка (текущий пользователь)";
             tabPageFolderCurrentUser.UseVisualStyleBackColor = true;
@@ -113,17 +114,17 @@
             tabPageFolderAllUsers.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             tabPageFolderAllUsers.Location = new Point(4, 24);
             tabPageFolderAllUsers.Name = "tabPageFolderAllUsers";
-            tabPageFolderAllUsers.Size = new Size(880, 514);
+            tabPageFolderAllUsers.Size = new Size(880, 470);
             tabPageFolderAllUsers.TabIndex = 3;
             tabPageFolderAllUsers.Text = "Папка автозагрзка (все пользователи)";
             tabPageFolderAllUsers.UseVisualStyleBackColor = true;
             // 
-            // tabPageTaskSheduler
+            // tabPageTaskSсheduler
             // 
             tabPageTaskSсheduler.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             tabPageTaskSсheduler.Location = new Point(4, 24);
-            tabPageTaskSсheduler.Name = "tabPageTaskSheduler";
-            tabPageTaskSсheduler.Size = new Size(880, 514);
+            tabPageTaskSсheduler.Name = "tabPageTaskSсheduler";
+            tabPageTaskSсheduler.Size = new Size(880, 470);
             tabPageTaskSсheduler.TabIndex = 4;
             tabPageTaskSсheduler.Text = "Планировщик задач";
             tabPageTaskSсheduler.UseVisualStyleBackColor = true;
@@ -233,13 +234,25 @@
             panelTaskScheduler.Size = new Size(200, 100);
             panelTaskScheduler.TabIndex = 1;
             // 
+            // buttonRefresh
+            // 
+            buttonRefresh.Location = new Point(0, 56);
+            buttonRefresh.Name = "buttonRefresh";
+            buttonRefresh.Size = new Size(150, 40);
+            buttonRefresh.TabIndex = 3;
+            buttonRefresh.Text = "Обновить";
+            buttonRefresh.UseVisualStyleBackColor = true;
+            buttonRefresh.Click += buttonRefresh_Click;
+            // 
             // StartupManagementControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoScroll = true;
+            Controls.Add(buttonRefresh);
             Controls.Add(tabControlAutoRun);
             Controls.Add(label1);
+            ForeColor = SystemColors.ControlText;
             Name = "StartupManagementControl";
             Size = new Size(894, 600);
             Load += StartupManagementControl_Load;
@@ -272,5 +285,6 @@
         private Panel panelRegistryAllUsers;
         private Panel panelRegistryCurrentUser;
         private Panel panelTaskScheduler;
+        private Button buttonRefresh;
     }
 }
