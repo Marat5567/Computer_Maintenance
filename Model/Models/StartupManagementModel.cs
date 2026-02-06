@@ -2,9 +2,13 @@
 using Computer_Maintenance.Core.WinApi;
 using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
+using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Computer_Maintenance.Model.Models
 {
@@ -78,6 +82,8 @@ namespace Computer_Maintenance.Model.Models
                     TaskSchedulerItems.Clear();
                     LoadTaskSchedulerItems(startupType: StartupType.TaskScheduler, TaskSchedulerItems);
                     break;
+                case StartupType.None:
+                    return;
             }
         }
         private void LoadRegistryStartupItems(RegistryKey registryRoot, StartupType startupType, List<StartupItemRegistry> collectionToAdd, string path)
@@ -295,7 +301,7 @@ namespace Computer_Maintenance.Model.Models
         }
 
 
-        public bool ChangeStateStartup(string name, StartupType startupType, bool is32Bit = false)
+        public bool ChangeStateStartup(string name, string path, StartupType startupType, bool is32Bit = false)
         {
             if (string.IsNullOrEmpty(name)) { return false; }
 
@@ -329,40 +335,35 @@ namespace Computer_Maintenance.Model.Models
                 }
 
                 if (key == null) { return false; }
-                string[] valueNames = key.GetValueNames();
 
-                if (valueNames.Length > 0)
+                object? existingValue = key?.GetValue(name);
+
+                if (existingValue != null)
                 {
-                    foreach (string valueName in valueNames)
+                    if (key.GetValueKind(name) == RegistryValueKind.Binary && existingValue is byte[] data)
                     {
-                        if (valueName == name)
-                        {
-                            if (key.GetValueKind(valueName) != RegistryValueKind.Binary) { continue; }
+                        byte[] newData = new byte[data.Length];
+                        Array.Copy(data, newData, data.Length);
 
-                            object valueData = key.GetValue(valueName);
+                        newData[0] = (newData[0] == ENABLED_FLAG) ? DISABLED_FLAG : ENABLED_FLAG;
 
-                            if (valueData != null)
-                            {
-                                if (valueData is byte[] data)
-                                {
-                                    if ((byte)data[0] == ENABLED_FLAG)
-                                    {
-                                        data[0] = DISABLED_FLAG;
-                                    }
-                                    else
-                                    {
-                                        data[0] = ENABLED_FLAG;
-                                    }
-
-                                    key.SetValue(valueName, data, RegistryValueKind.Binary);
-                                    return true;
-                                }
-                            }
-                        }
+                        key.SetValue(name, newData, RegistryValueKind.Binary);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
                     }
                 }
-
-                return true;
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(path))
+                    {
+                        byte[] newEntry = new byte[] { DISABLED_FLAG, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+                        key?.SetValue(name, newEntry, RegistryValueKind.Binary);
+                    }
+                    return true;
+                }
             }
             catch
             {
@@ -374,12 +375,234 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
+        public void DeleteUnusedRecords_Click(StartupType startupType, bool is32Bit = false)
+        {
+            RegistryKey? key = null;
+
+            try
+            {
+                switch (startupType)
+                {
+                    case StartupType.RegistryCurrentUser:
+                        key = Registry.CurrentUser.OpenSubKey(REGISTRY_CURRENT_USER_APPROWED, true);
+                        if (key == null) break;
+
+                        string[] valueNames = key.GetValueNames();
+
+                        HashSet<string> validNamesSet = new HashSet<string>(
+                            RegistryStartupItems_CurrentUser.Select(r => r.RegistryName),
+                            StringComparer.OrdinalIgnoreCase
+                        );
+
+                        foreach (string valueName in valueNames)
+                        {
+                            if (!validNamesSet.Contains(valueName))
+                            {
+                                try
+                                {
+                                    key.DeleteValue(valueName);
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                            }
+                        }
+                        break;
+
+                    case StartupType.RegistryLocalMachine:
+                        if (is32Bit)
+                        {
+                            key = Registry.LocalMachine.OpenSubKey(REGISTRY_WOW6432Node_APPROWED, true);
+                        }
+                        else
+                        {
+                            key = Registry.LocalMachine.OpenSubKey(REGISTRY_ALL_USERS_APPROWED, true);
+                        }
+
+                        if (key == null) break;
+
+                        string[] lmValueNames = key.GetValueNames();
+
+                        HashSet<string> lmValidNamesSet = new HashSet<string>(
+                            RegistryStartupItems_AllUsers.Select(r => r.RegistryName),
+                            StringComparer.OrdinalIgnoreCase
+                        );
+
+                        foreach (string valueName in lmValueNames)
+                        {
+                            if (!lmValidNamesSet.Contains(valueName))
+                            {
+                                try
+                                {
+                                    key.DeleteValue(valueName);
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                            }
+                        }
+                        break;
+
+                    case StartupType.StartupFolderCurrentUser:
+                        key = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_CURRENT_USER_REGISTRY_PATH_APPROWED, true);
+                        if (key == null) break;
+
+                        string[] folderCuValueNames = key.GetValueNames();
+
+                        HashSet<string> folderCuValidNamesSet = new HashSet<string>(
+                            FolderStartupItems_CurrentUser
+                                .Where(f => f.State != StartupState.None)
+                                .Select(f => f.NameExtracted),
+                            StringComparer.OrdinalIgnoreCase
+                        );
+
+                        foreach (string valueName in folderCuValueNames)
+                        {
+                            if (!folderCuValidNamesSet.Contains(valueName))
+                            {
+                                try
+                                {
+                                    key.DeleteValue(valueName);
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                            }
+                        }
+                        break;
+
+                    case StartupType.StartupFolderAllUsers:
+                        key = Registry.LocalMachine.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
+                        if (key == null) break;
+
+                        string[] folderAuValueNames = key.GetValueNames();
+
+                        HashSet<string> folderAuValidNamesSet = new HashSet<string>(
+                            FolderStartupItems_AllUsers
+                                .Where(f => f.State != StartupState.None)
+                                .Select(f => f.NameExtracted),
+                            StringComparer.OrdinalIgnoreCase
+                        );
+
+                        foreach (string valueName in folderAuValueNames)
+                        {
+                            if (!folderAuValidNamesSet.Contains(valueName))
+                            {
+                                try
+                                {
+                                    key.DeleteValue(valueName);
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+            finally
+            {
+                key?.Dispose();
+            }
+        }
 
 
+        public void DeleteRegistryRecord(string registryName, string nameFile, StartupType startupType, bool is32Bit = false)
+        {
+            if (string.IsNullOrWhiteSpace(registryName)) { throw new Exception("Имя записи реестра не может быть пустым"); }
+            RegistryKey? key = null;
+            RegistryKey? keyApprowed = null;
+
+            try
+            {
+                switch (startupType)
+                {
+                    case StartupType.RegistryCurrentUser:
+                        key = Registry.CurrentUser.OpenSubKey(REGISTRY_CURRENT_USER, true);
+                        keyApprowed = Registry.CurrentUser.OpenSubKey(REGISTRY_CURRENT_USER_APPROWED, true);
+                        break;
+                    case StartupType.RegistryLocalMachine:
+                        if (is32Bit)
+                        {
+                            key = Registry.LocalMachine.OpenSubKey(REGISTRY_WOW6432Node, true);
+                            keyApprowed = Registry.LocalMachine.OpenSubKey(REGISTRY_WOW6432Node_APPROWED, true);
+                        }
+                        else
+                        {
+                            key = Registry.LocalMachine.OpenSubKey(REGISTRY_ALL_USERS, true);
+                            keyApprowed = Registry.LocalMachine.OpenSubKey(REGISTRY_ALL_USERS_APPROWED, true);
+                        }
+                        break;
+                }
+
+                if (keyApprowed != null)
+                {
+                    keyApprowed.DeleteValue(registryName, false);
+                }
+                key?.DeleteValue(registryName, true);
+            }
+            catch
+            {
+                string msg = string.IsNullOrWhiteSpace(nameFile) ? registryName : nameFile;
+                throw new Exception($"Ну удалось удалить значение: {msg} из рестра");
+            }
+            finally
+            {
+                key?.Dispose();
+                keyApprowed?.Dispose();
+            }
+        }
+
+        public void DeleteFolderRecord(string nameFile, string folderPath, StartupType startupType)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath)) { throw new Exception("Путь не может быть пустым"); }
+            RegistryKey? keyApprowed = null;
+
+            try
+            {
+                switch (startupType)
+                {
+                    case StartupType.StartupFolderCurrentUser:
+                        keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_CURRENT_USER_REGISTRY_PATH_APPROWED, true);
+                        break;
+                    case StartupType.StartupFolderAllUsers:
+                        keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
+                        break;
+                }
+
+                if (keyApprowed != null)
+                {
+                    keyApprowed?.DeleteValue(nameFile, false);
+                }
+
+                bool deleted = FileApi.DeleteFileW(folderPath);
+
+                if (!deleted)
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    string errorMessage = new Win32Exception(errorCode).Message;
+
+                    string itemName = string.IsNullOrWhiteSpace(nameFile) ? Path.GetFileName(folderPath) : nameFile;
+                    throw new IOException($"Не удалось удалить файл '{itemName}'. Код ошибки: {errorCode} - {errorMessage}");
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                keyApprowed?.Dispose(); 
+            }
+        }
 
         private StartupState GetStartupState(string registryName, StartupType startupType, bool is32Bit = false)
         {
-            if (string.IsNullOrEmpty(registryName)) { return StartupState.None; }
+            if (string.IsNullOrWhiteSpace(registryName)) { return StartupState.None; }
             RegistryKey? key = null;
 
             try
@@ -481,6 +704,11 @@ namespace Computer_Maintenance.Model.Models
 
             string trimmedPath = path.Trim();
 
+            string expandedPath = Environment.ExpandEnvironmentVariables(trimmedPath);
+            if (File.Exists(expandedPath) || Directory.Exists(expandedPath))
+            {
+                return expandedPath;
+            }
             // Убираем кавычки в начале и конце
             if (trimmedPath.StartsWith("\"") && trimmedPath.Length > 1)
             {
@@ -501,11 +729,12 @@ namespace Computer_Maintenance.Model.Models
         }
         private string CheckExistsPath(string path)
         {
-            string expandPath = Environment.ExpandEnvironmentVariables(path);
-            if (string.IsNullOrWhiteSpace(expandPath)) { return path;}
-
-            return expandPath;
-
+            string expandedPath = Environment.ExpandEnvironmentVariables(path);
+            if (File.Exists(expandedPath) || Directory.Exists(expandedPath))
+            {
+                return expandedPath;
+            }
+            return path;
         }
         private string GetNameExe(string extractedPath)
         {

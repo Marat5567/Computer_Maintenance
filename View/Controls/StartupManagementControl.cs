@@ -1,9 +1,9 @@
 ﻿using Computer_Maintenance.Core.Services;
+using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
 using Computer_Maintenance.View.Interfaces;
 using Microsoft.Win32.TaskScheduler;
-using System.ComponentModel;
 
 namespace Computer_Maintenance.View.Controls
 {
@@ -13,7 +13,9 @@ namespace Computer_Maintenance.View.Controls
         public event EventHandler OpenExplorerClicked;
         public event EventHandler ChangeStateSelectedItems;
         public event EventHandler CopyClipboardClicked;
-
+        public event EventHandler DeleteUnusedRecords_Click;
+        public event EventHandler DeleteRegistryRecordClick;
+        public event EventHandler DeleteFolderItemClick;
         public (bool isFile, string path) SelectedPath { get; set; }
         public StartupType LastFolderSelectionSource { get; set; }
 
@@ -23,6 +25,7 @@ namespace Computer_Maintenance.View.Controls
         public StartupManagementControl()
         {
             InitializeComponent();
+            labelInfo.Text = String.Empty;
 
             listViewFolderCurrentUser.MouseDown += ListView_Activate;
             listViewFolderAllUsers.MouseDown += ListView_Activate;
@@ -96,6 +99,29 @@ namespace Computer_Maintenance.View.Controls
             tabPageFolderCurrentUser.Controls.Add(panelFolderCurrentUser);
             tabPageFolderAllUsers.Controls.Add(panelFolderAllUsers);
             tabPageTaskSсheduler.Controls.Add(panelTaskScheduler);
+
+            tabPageRegistryCurrentUser.Enter += TabPage_Enter;
+            tabPageRegistryAllUsers.Enter += TabPage_Enter;
+            tabPageFolderCurrentUser.Enter += TabPage_Enter;
+            tabPageFolderAllUsers.Enter += TabPage_Enter;
+            tabPageTaskSсheduler.Enter += TabPage_Enter;
+        }
+        private void TabPage_Enter(object s, EventArgs e)
+        {
+            TabPage clickedTab = s as TabPage;
+            labelInfo.Text = String.Empty;
+
+            if (clickedTab != null)
+            {
+                if (clickedTab == tabPageRegistryAllUsers || clickedTab == tabPageFolderAllUsers)
+                {
+                    if (ApplicationAccess.CurrentAccess == ApplicationAccess.Access.User)
+                    {
+                        labelInfo.ForeColor = Color.Red;
+                        labelInfo.Text = "Нету прав на этот раздел реестра(только чтение), необходимо парва АДМИНА";
+                    }
+                }
+            }
         }
         private void listViewRegistryCurrentUser_Resize(object sender, EventArgs e)
         {
@@ -179,6 +205,11 @@ namespace Computer_Maintenance.View.Controls
             LoadControl?.Invoke(this, EventArgs.Empty);
         }
 
+        private void buttonDeleteUnusedRecords_Click(object sender, EventArgs e)
+        {
+            DeleteUnusedRecords_Click?.Invoke(this, EventArgs.Empty);
+        }
+
 
         public void DisplayItems(List<object> items, StartupType type)
         {
@@ -202,6 +233,8 @@ namespace Computer_Maintenance.View.Controls
                 case StartupType.TaskScheduler:
                     currentListView = listViewTaskScheduler;
                     break;
+                case StartupType.None:
+                    return;
             }
 
             if (currentListView == null) { return; }
@@ -268,169 +301,6 @@ namespace Computer_Maintenance.View.Controls
                     return string.Empty;
             }
         }
-        public void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems, StartupType type)
-        {
-            if ((type & StartupType.RegistryCurrentUser) != 0)
-            {
-                listViewRegistryCurrentUser.BeginUpdate();
-                listViewRegistryCurrentUser.Items.Clear();
-                foreach (StartupItemRegistry item in startupItems)
-                {
-                    if (item.Type.HasFlag(StartupType.RegistryCurrentUser))
-                    {
-                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
-                        if (item.State == StartupState.Enabled)
-                        {
-                            viewItem.SubItems.Add("Включено");
-                        }
-                        else if (item.State == StartupState.Disabled)
-                        {
-                            viewItem.SubItems.Add("Отключено");
-                        }
-                        else if (item.State == StartupState.None)
-                        {
-                            viewItem.SubItems.Add("Неизвестно");
-                        }
-                        viewItem.SubItems.Add(item.PathExtracted);
-                        viewItem.Tag = item;
-                        listViewRegistryCurrentUser.Items.Add(viewItem);
-                    }
-                }
-                listViewRegistryCurrentUser.EndUpdate();
-            }
-
-            if ((type & StartupType.RegistryLocalMachine) != 0)
-            {
-                listViewRegistryAllUsers.BeginUpdate();
-                listViewRegistryAllUsers.Items.Clear();
-                foreach (StartupItemRegistry item in startupItems)
-                {
-                    if (item.Type.HasFlag(StartupType.RegistryLocalMachine))
-                    {
-                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
-
-                        if (item.State == StartupState.Enabled)
-                        {
-                            viewItem.SubItems.Add("Включено");
-                        }
-                        else if (item.State == StartupState.Disabled)
-                        {
-                            viewItem.SubItems.Add("Отключено");
-                        }
-                        else if (item.State == StartupState.None)
-                        {
-                            viewItem.SubItems.Add("Неизвестно");
-                        }
-
-                        viewItem.SubItems.Add(item.PathExtracted);
-
-                        viewItem.SubItems.Add(item.Is32Bit ? "32 бит" : "");
-                        viewItem.Tag = item;
-                        listViewRegistryAllUsers.Items.Add(viewItem);
-                    }
-                }
-                listViewRegistryAllUsers.EndUpdate();
-            }
-        }
-        public void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type)
-        {
-            if ((type & StartupType.StartupFolderCurrentUser) != 0)
-            {
-                listViewFolderCurrentUser.BeginUpdate();
-                listViewFolderCurrentUser.Items.Clear();
-                foreach (StartupItemFolder item in startupItems)
-                {
-                    if (item.Type.HasFlag(StartupType.StartupFolderCurrentUser))
-                    {
-                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
-                        if (item.State == StartupState.Enabled)
-                        {
-                            viewItem.SubItems.Add("Включено");
-                        }
-                        else if (item.State == StartupState.Disabled)
-                        {
-                            viewItem.SubItems.Add("Отключено");
-                        }
-                        else if (item.State == StartupState.None)
-                        {
-                            viewItem.SubItems.Add("Неизвестно");
-                        }
-                        viewItem.SubItems.Add(item.PathExtracted);
-                        viewItem.Tag = item;
-                        listViewFolderCurrentUser.Items.Add(viewItem);
-                    }
-                }
-                listViewFolderCurrentUser.EndUpdate();
-            }
-
-            if ((type & StartupType.StartupFolderAllUsers) != 0)
-            {
-                listViewFolderAllUsers.BeginUpdate();
-                listViewFolderAllUsers.Items.Clear();
-                foreach (StartupItemFolder item in startupItems)
-                {
-                    if (item.Type.HasFlag(StartupType.StartupFolderAllUsers))
-                    {
-                        ListViewItem viewItem = new ListViewItem(item.NameExtracted);
-                        if (item.State == StartupState.Enabled)
-                        {
-                            viewItem.SubItems.Add("Включено");
-                        }
-                        else if (item.State == StartupState.Disabled)
-                        {
-                            viewItem.SubItems.Add("Отключено");
-                        }
-                        else if (item.State == StartupState.None)
-                        {
-                            viewItem.SubItems.Add("Неизвестно");
-                        }
-                        viewItem.SubItems.Add(item.PathExtracted);
-                        viewItem.Tag = item;
-                        listViewFolderAllUsers.Items.Add(viewItem);
-                    }
-                }
-                listViewFolderAllUsers.EndUpdate();
-            }
-        }
-        public void DisplayTaskSchedulerItems(List<TaskSchedulerItem> startupItems)
-        {
-            listViewTaskScheduler.BeginUpdate();
-
-            listViewTaskScheduler.Items.Clear();
-            foreach (TaskSchedulerItem item in startupItems)
-            {
-                ListViewItem viewItem = new ListViewItem(item.File);
-                viewItem.SubItems.Add(item.Name);
-
-                if (item.State == TaskState.Running)
-                {
-                    viewItem.SubItems.Add("Работает");
-                }
-                else if (item.State == TaskState.Queued)
-                {
-                    viewItem.SubItems.Add("В очереди");
-                }
-                else if (item.State == TaskState.Disabled)
-                {
-                    viewItem.SubItems.Add("Отключен");
-                }
-                else if (item.State == TaskState.Ready)
-                {
-                    viewItem.SubItems.Add("Готово");
-                }
-                else if (item.State == TaskState.Unknown)
-                {
-                    viewItem.SubItems.Add("Неизвестно");
-                }
-                viewItem.SubItems.Add(item.Path);
-                viewItem.Tag = item;
-
-                listViewTaskScheduler.Items.Add(viewItem);
-            }
-
-            listViewTaskScheduler.EndUpdate();
-        }
-
 
         public List<object> GetSelectedItems()
         {
@@ -466,8 +336,8 @@ namespace Computer_Maintenance.View.Controls
                         LastFolderSelectionSource = StartupType.StartupFolderAllUsers;
                     }
                 }
-                
-                return new(); 
+
+                return new();
             }
 
             if (items[0] is StartupItemFolder startupItemFolder)
@@ -498,43 +368,43 @@ namespace Computer_Maintenance.View.Controls
         private ContextMenuStrip CreateContextMenuItem(int listViewItemsCount, StartupType startupType)
         {
             ContextMenuStrip contextMenu = new ContextMenuStrip();
-            List<ToolStripItem> toolStripItems = new List<ToolStripItem>();
 
             ToolStripMenuItem openExplorer = new ToolStripMenuItem("Открыть в проводнике");
             ToolStripMenuItem add = new ToolStripMenuItem("Добавить");
 
             ToolStripMenuItem changeStateItem = null;
             ToolStripMenuItem copyPathItem = null;
-            ToolStripMenuItem deleteItem = null;
-            ToolStripMenuItem changeItem = null;
+            ToolStripMenuItem deleteRegistryItem = null;
+            ToolStripMenuItem deleteItemFolder = null;
 
             openExplorer.Click += (s, e) => OpenExplorerClicked?.Invoke(this, EventArgs.Empty);
 
             if (listViewItemsCount > 0)
             {
                 changeStateItem = new ToolStripMenuItem("Изменить состояние");
-                deleteItem = new ToolStripMenuItem("Удалить");
-                changeItem = new ToolStripMenuItem("Изменить");
                 copyPathItem = new ToolStripMenuItem("Копировать путь");
 
+
                 contextMenu.Items.Add(changeStateItem);
-                contextMenu.Items.Add(deleteItem);
-                contextMenu.Items.Add(changeItem);
                 contextMenu.Items.Add(copyPathItem);
 
                 switch (startupType)
                 {
                     case StartupType.StartupFolderCurrentUser:
                     case StartupType.StartupFolderAllUsers:
-                        //deleteItem.Click += (s, e) => DeleteSelectedItem_Folder?.Invoke(this, EventArgs.Empty);
+                        deleteItemFolder = new ToolStripMenuItem("Удалить из папки");
+
+                        deleteItemFolder.Click += (s, e) => DeleteFolderItemClick?.Invoke(this, EventArgs.Empty);
                         changeStateItem.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
                         copyPathItem.Click += (s, e) => CopyClipboardClicked?.Invoke(this, EventArgs.Empty);
                         break;
 
                     case StartupType.RegistryCurrentUser:
                     case StartupType.RegistryLocalMachine:
+                        deleteRegistryItem = new ToolStripMenuItem("Удалить из реестра");
                         changeStateItem.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
                         copyPathItem.Click += (s, e) => CopyClipboardClicked?.Invoke(this, EventArgs.Empty);
+                        deleteRegistryItem.Click += (s, e) => DeleteRegistryRecordClick?.Invoke(this, EventArgs.Empty);
                         break;
 
                     case StartupType.TaskScheduler:
@@ -544,23 +414,46 @@ namespace Computer_Maintenance.View.Controls
                 }
             }
 
+            switch (ApplicationAccess.CurrentAccess)
+            {
+                case ApplicationAccess.Access.User:
+                    switch (startupType)
+                    {
+                        case StartupType.StartupFolderAllUsers:
+                        case StartupType.RegistryLocalMachine:
+                            openExplorer?.Visible = true;
+                            changeStateItem?.Visible = false;
+                            add?.Visible = false;
+                            deleteRegistryItem?.Visible = false;
+                            deleteItemFolder?.Visible = false;
+                            break;
+                    }
+                    break;
+                case ApplicationAccess.Access.Admin:
+                    openExplorer?.Visible = true;
+                    changeStateItem?.Visible = true;
+                    add?.Visible = true;
+                    deleteRegistryItem?.Visible = true;
+                    deleteItemFolder?.Visible = true;
+                    break;
+            }
             contextMenu.Items.Add(openExplorer);
 
-            if (changeStateItem != null)
-            {
-                contextMenu.Items.Add(changeStateItem);
-            }
             if (copyPathItem != null)
             {
                 contextMenu.Items.Add(copyPathItem);
             }
-            if (changeItem != null)
+            if (changeStateItem != null)
             {
-                contextMenu.Items.Add(changeItem);
+                contextMenu.Items.Add(changeStateItem);
             }
-            if (deleteItem != null)
+            if (deleteRegistryItem != null)
             {
-                contextMenu.Items.Add(deleteItem);
+                contextMenu.Items.Add(deleteRegistryItem);
+            }
+            if (deleteItemFolder != null)
+            {
+                contextMenu.Items.Add(deleteItemFolder);
             }
             contextMenu.Items.Add(add);
             return contextMenu;
@@ -584,5 +477,6 @@ namespace Computer_Maintenance.View.Controls
                 _activeListView = current;
             }
         }
+
     }
 }

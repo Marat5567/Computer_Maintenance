@@ -1,8 +1,9 @@
 ﻿using Computer_Maintenance.Core.Services;
+using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Models;
 using Computer_Maintenance.Presenters;
 using Computer_Maintenance.View.Interfaces;
-using System.Security.Principal;
+using static Computer_Maintenance.Model.Config.ApplicationAccess;
 
 namespace Computer_Maintenance
 {
@@ -16,14 +17,14 @@ namespace Computer_Maintenance
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
-            bool isAdmin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
-
-            switch (isAdmin)
+            switch (Environment.IsPrivilegedProcess ? Access.Admin : Access.User)
             {
-                case true:
+                case Access.Admin:
+                    ApplicationAccess.CurrentAccess = Access.Admin;
                     this.Text = "Обслуживание ПК [Администратор]";
                     break;
-                case false:
+                case Access.User:
+                    ApplicationAccess.CurrentAccess = Access.User;
                     this.Text = "Обслуживание ПК [Ползователь]";
                     break;
             }

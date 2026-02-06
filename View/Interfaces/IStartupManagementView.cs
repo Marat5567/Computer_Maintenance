@@ -9,12 +9,12 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler OpenExplorerClicked;
         event EventHandler ChangeStateSelectedItems;
         event EventHandler CopyClipboardClicked;
+        event EventHandler DeleteUnusedRecords_Click;
+        event EventHandler DeleteRegistryRecordClick;
+        event EventHandler DeleteFolderItemClick;
 
         (bool isFile, string path) SelectedPath { get; set; }
         public StartupType LastFolderSelectionSource { get; set; }
-        void DisplayRegistryStartupItems(List<StartupItemRegistry> startupItems, StartupType type);
-        void DisplayFolderStartupItems(List<StartupItemFolder> startupItems, StartupType type);
-        void DisplayTaskSchedulerItems(List<TaskSchedulerItem> startupItems);
         void DisplayItems(List<object> items, StartupType type);
         public List<object> GetSelectedItems();
     }

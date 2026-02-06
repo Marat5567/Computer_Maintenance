@@ -46,6 +46,8 @@
             panelRegistryCurrentUser = new Panel();
             panelTaskScheduler = new Panel();
             buttonRefresh = new Button();
+            labelInfo = new Label();
+            buttonDeleteUnusedRecords = new Button();
             tabControlAutoRun.SuspendLayout();
             panelFolderAllUsers.SuspendLayout();
             panelFolderCurrentUser.SuspendLayout();
@@ -244,11 +246,34 @@
             buttonRefresh.UseVisualStyleBackColor = true;
             buttonRefresh.Click += buttonRefresh_Click;
             // 
+            // labelInfo
+            // 
+            labelInfo.AutoSize = true;
+            labelInfo.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 204);
+            labelInfo.ForeColor = Color.Red;
+            labelInfo.Location = new Point(315, 64);
+            labelInfo.Name = "labelInfo";
+            labelInfo.Size = new Size(48, 21);
+            labelInfo.TabIndex = 4;
+            labelInfo.Text = "label";
+            // 
+            // buttonDeleteUnusedRecords
+            // 
+            buttonDeleteUnusedRecords.Location = new Point(159, 56);
+            buttonDeleteUnusedRecords.Name = "buttonDeleteUnusedRecords";
+            buttonDeleteUnusedRecords.Size = new Size(150, 40);
+            buttonDeleteUnusedRecords.TabIndex = 5;
+            buttonDeleteUnusedRecords.Text = "Удалить неиспользуемые записи";
+            buttonDeleteUnusedRecords.UseVisualStyleBackColor = true;
+            buttonDeleteUnusedRecords.Click += buttonDeleteUnusedRecords_Click;
+            // 
             // StartupManagementControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoScroll = true;
+            Controls.Add(buttonDeleteUnusedRecords);
+            Controls.Add(labelInfo);
             Controls.Add(buttonRefresh);
             Controls.Add(tabControlAutoRun);
             Controls.Add(label1);
@@ -286,5 +311,7 @@
         private Panel panelRegistryCurrentUser;
         private Panel panelTaskScheduler;
         private Button buttonRefresh;
+        private Label labelInfo;
+        private Button buttonDeleteUnusedRecords;
     }
 }
