@@ -23,7 +23,11 @@ namespace Computer_Maintenance.Presenter
             _view.CopyClipboardClicked += OnCopyClipboardClicked;
             _view.DeleteUnusedRecords_Click += OnDeleteUnusedRecords_Click;
             _view.DeleteRegistryRecordClick += OnDeleteRegistryRecord;
-            _view.DeleteFolderItemClick += OnDeleteFolderItemClick;
+            _view.ViewDetailClick += OnViewDetailClick;
+            _view.CompleteTaskClick += OnCompleteTaskClick;
+            _view.RunTaskClick += OnRunTaskClick;
+            //_view.CreateRegistryRecordClick += OnCreateRegistryRecordClick;
+            //_view.DeleteFolderItemClick += OnDeleteFolderItemClick;
         }
 
         private void OnLoadControl(object s, EventArgs e)
@@ -37,56 +41,104 @@ namespace Computer_Maintenance.Presenter
             RefreshStartupItems(StartupType.TaskScheduler);
         }
 
-        private void OnDeleteFolderItemClick(object s, EventArgs e)
+        private void OnRunTaskClick(object s, EventArgs e)
         {
             List<object> items = _view.GetSelectedItems();
             if (items.Count == 0) return;
 
-            if (MessageService.ShowMessage(
-                owner: null,
-                msg: $"Удалить выбранные приложения ({items.Count} шт.)?",
-                headerName: "Подтверждение удаления",
-                buttons: MessageBoxButtons.YesNo,
-                icon: MessageBoxIcon.Question) != DialogResult.Yes)
-            {
-                return;
-            }
-
-            StartupType typeRefresh = StartupType.None;
-
             foreach (object item in items)
             {
-                if (item is StartupItemFolder folder)
+                if (item is TaskSchedulerItem taskSchedulerItem)
                 {
-                    if (typeRefresh == StartupType.None)
+                    if (_model.RunTask(taskSchedulerItem.File))
                     {
-                        typeRefresh = folder.Type;
-                    }
-
-                    try
-                    {
-                        _model.DeleteFolderRecord(folder.NameExtracted, folder.PathExtracted, folder.Type);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageService.ShowMessage(
-                            owner: null,
-                            msg: $"Не удалось удалить '{folder.NameExtracted}': {ex.Message}",
-                            headerName: "Ошибка",
-                            buttons: MessageBoxButtons.OK,
-                            icon: MessageBoxIcon.Error);
+                        RefreshStartupItems(taskSchedulerItem.Type);
                     }
                 }
             }
-
-            RefreshStartupItems(typeRefresh);
         }
+        private void OnCompleteTaskClick(object s, EventArgs e)
+        {
+            List<object> items = _view.GetSelectedItems();
+            if (items.Count == 0) return;
+
+            foreach (object item in items)
+            {
+                if (item is TaskSchedulerItem taskSchedulerItem)
+                {
+                    if (_model.CompleteTask(taskSchedulerItem.File))
+                    {
+                        RefreshStartupItems(taskSchedulerItem.Type);
+                    }
+                }
+            }
+        }
+        private void OnViewDetailClick(object s, EventArgs e)
+        {
+            List<object> items = _view.GetSelectedItems();
+            if (items.Count == 0) return;
+
+            foreach (object item in items)
+            {
+                if (item is TaskSchedulerItem taskSchedulerItem)
+                {
+                    _model.ViewDetailTaskSchedulerItem(taskSchedulerItem.Author, taskSchedulerItem.Description, taskSchedulerItem.Created);
+                }
+            }
+        }
+
+        //private void OnDeleteFolderItemClick(object s, EventArgs e)
+        //{
+        //    List<object> items = _view.GetSelectedItems();
+        //    if (items.Count == 0) return;
+
+        //    if (MessageService.ShowMessage(
+        //        owner: null,
+        //        msg: $"Удалить выбранные приложения ({items.Count} шт.)?",
+        //        headerName: "Подтверждение удаления",
+        //        buttons: MessageBoxButtons.YesNo,
+        //        icon: MessageBoxIcon.Question) != DialogResult.Yes)
+        //    {
+        //        return;
+        //    }
+
+        //    StartupType typeRefresh = StartupType.None;
+
+        //    foreach (object item in items)
+        //    {
+        //        if (item is StartupItemFolder folder)
+        //        {
+        //            if (typeRefresh == StartupType.None)
+        //            {
+        //                typeRefresh = folder.Type;
+        //            }
+
+        //            try
+        //            {
+        //                _model.DeleteFolderRecord(folder.NameExtracted, folder.PathExtracted, folder.Type);
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                MessageService.ShowMessage(
+        //                    owner: null,
+        //                    msg: $"Не удалось удалить '{folder.NameExtracted}': {ex.Message}",
+        //                    headerName: "Ошибка",
+        //                    buttons: MessageBoxButtons.OK,
+        //                    icon: MessageBoxIcon.Error);
+        //            }
+        //        }
+        //    }
+
+        //    RefreshStartupItems(typeRefresh);
+        //}
 
         private void RefreshStartupItems(StartupType type)
         {
             _model.LoadStartupItems(type);
             _view.DisplayItems(_model.GetStartupItems(type), type);
         }
+
+
 
         private void OnDeleteRegistryRecord(object s, EventArgs e)
         {
@@ -182,7 +234,7 @@ namespace Computer_Maintenance.Presenter
                 }
                 else if (item is TaskSchedulerItem taskSchedulerItem)
                 {
-                    if (_model.ChangeStateStartup(taskSchedulerItem.Name, taskSchedulerItem.Path, taskSchedulerItem.Type))
+                    if (_model.ChangeStateStartup(taskSchedulerItem.File, taskSchedulerItem.Path, taskSchedulerItem.Type))
                     {
                         taskType = taskSchedulerItem.Type;
                     }

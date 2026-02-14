@@ -11,8 +11,11 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler CopyClipboardClicked;
         event EventHandler DeleteUnusedRecords_Click;
         event EventHandler DeleteRegistryRecordClick;
-        event EventHandler DeleteFolderItemClick;
-
+        event EventHandler ViewDetailClick;
+        event EventHandler CompleteTaskClick;
+        event EventHandler RunTaskClick;
+        //event EventHandler CreateRegistryRecordClick;
+        //event EventHandler DeleteFolderItemClick;
         (bool isFile, string path) SelectedPath { get; set; }
         public StartupType LastFolderSelectionSource { get; set; }
         void DisplayItems(List<object> items, StartupType type);

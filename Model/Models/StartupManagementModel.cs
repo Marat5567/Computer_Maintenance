@@ -2,6 +2,7 @@
 using Computer_Maintenance.Core.WinApi;
 using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
+using Computer_Maintenance.View.Forms;
 using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
@@ -157,6 +158,11 @@ namespace Computer_Maintenance.Model.Models
                 {
                     string executablePathFromTask = GetExecutablePathFromTask(task);
                     string pathExtracted = ExtractTaskSchedulerPath(executablePathFromTask);
+
+                    
+                    string author = task.Definition?.RegistrationInfo?.Author ?? "Неизвестно";
+                    string description = task.Definition?.RegistrationInfo?.Description ?? String.Empty;
+                    DateTime created = task?.Definition?.RegistrationInfo?.Date ?? DateTime.MinValue;
                     TaskSchedulerItem item = new TaskSchedulerItem
                     {
                         File = task.Name,
@@ -164,6 +170,9 @@ namespace Computer_Maintenance.Model.Models
                         Path = pathExtracted,
                         State = task.State,
                         Type = startupType,
+                        Author = author,
+                        Description = description,
+                        Created = created,
                     };
                     TaskSchedulerItems.Add(item);
                 }
@@ -235,6 +244,12 @@ namespace Computer_Maintenance.Model.Models
         }
 
 
+        public void ViewDetailTaskSchedulerItem(string author, string description, DateTime created)
+        {
+            ViewDetailTaskSchedulerItem_Form form = new ViewDetailTaskSchedulerItem_Form(author, description, created);
+            form.StartPosition = FormStartPosition.WindowsDefaultLocation;
+            form.Show();
+        }
 
         public void OpenPathToExplorer(bool isFile, string path, StartupType startupType)
         {
@@ -299,8 +314,35 @@ namespace Computer_Maintenance.Model.Models
                     return new List<object>();
             }
         }
+        public bool RunTask(string name)
+        {
+            using (TaskService ts = new TaskService())
+            {
+                Microsoft.Win32.TaskScheduler.Task? task = ts.GetTask(name);
+                if (task == null) { return false; }
 
+                try
+                {
+                    task.Run();
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+        public bool CompleteTask(string name)
+        {
+            using (TaskService ts = new TaskService())
+            {
+                Microsoft.Win32.TaskScheduler.Task? task = ts.GetTask(name);
+                if (task == null) { return false; }
 
+                task.Stop();
+                return true;
+            }
+        }
         public bool ChangeStateStartup(string name, string path, StartupType startupType, bool is32Bit = false)
         {
             if (string.IsNullOrEmpty(name)) { return false; }
@@ -331,7 +373,17 @@ namespace Computer_Maintenance.Model.Models
                     case StartupType.StartupFolderAllUsers:
                         key = Registry.LocalMachine.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
                         break;
+                    case StartupType.TaskScheduler:
+                        using (TaskService ts = new TaskService())
+                        {
+                            Microsoft.Win32.TaskScheduler.Task? task = ts.GetTask(name);
 
+                            if (task == null || task.State == TaskState.Running) { return false; }
+
+                            task.Enabled = !task.Enabled;
+                            return true;
+
+                        }
                 }
 
                 if (key == null) { return false; }
@@ -374,6 +426,8 @@ namespace Computer_Maintenance.Model.Models
                 key?.Dispose();
             }
         }
+
+
 
         public void DeleteUnusedRecords_Click(StartupType startupType, bool is32Bit = false)
         {
@@ -557,48 +611,53 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
-        public void DeleteFolderRecord(string nameFile, string folderPath, StartupType startupType)
-        {
-            if (string.IsNullOrWhiteSpace(folderPath)) { throw new Exception("Путь не может быть пустым"); }
-            RegistryKey? keyApprowed = null;
+        //public void CreateRegistryRecord(StartupType startupType)
+        //{
 
-            try
-            {
-                switch (startupType)
-                {
-                    case StartupType.StartupFolderCurrentUser:
-                        keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_CURRENT_USER_REGISTRY_PATH_APPROWED, true);
-                        break;
-                    case StartupType.StartupFolderAllUsers:
-                        keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
-                        break;
-                }
+        //}
 
-                if (keyApprowed != null)
-                {
-                    keyApprowed?.DeleteValue(nameFile, false);
-                }
+        //public void DeleteFolderRecord(string nameFile, string folderPath, StartupType startupType)
+        //{
+        //    if (string.IsNullOrWhiteSpace(folderPath)) { throw new Exception("Путь не может быть пустым"); }
+        //    RegistryKey? keyApprowed = null;
 
-                bool deleted = FileApi.DeleteFileW(folderPath);
+        //    try
+        //    {
+        //        switch (startupType)
+        //        {
+        //            case StartupType.StartupFolderCurrentUser:
+        //                keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_CURRENT_USER_REGISTRY_PATH_APPROWED, true);
+        //                break;
+        //            case StartupType.StartupFolderAllUsers:
+        //                keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
+        //                break;
+        //        }
 
-                if (!deleted)
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    string errorMessage = new Win32Exception(errorCode).Message;
+        //        if (keyApprowed != null)
+        //        {
+        //            keyApprowed?.DeleteValue(nameFile, false);
+        //        }
 
-                    string itemName = string.IsNullOrWhiteSpace(nameFile) ? Path.GetFileName(folderPath) : nameFile;
-                    throw new IOException($"Не удалось удалить файл '{itemName}'. Код ошибки: {errorCode} - {errorMessage}");
-                }
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                keyApprowed?.Dispose(); 
-            }
-        }
+        //        bool deleted = FileApi.DeleteFileW(folderPath);
+
+        //        if (!deleted)
+        //        {
+        //            int errorCode = Marshal.GetLastWin32Error();
+        //            string errorMessage = new Win32Exception(errorCode).Message;
+
+        //            string itemName = string.IsNullOrWhiteSpace(nameFile) ? Path.GetFileName(folderPath) : nameFile;
+        //            throw new IOException($"Не удалось удалить файл '{itemName}'. Код ошибки: {errorCode} - {errorMessage}");
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        throw;
+        //    }
+        //    finally
+        //    {
+        //        keyApprowed?.Dispose(); 
+        //    }
+        //}
 
         private StartupState GetStartupState(string registryName, StartupType startupType, bool is32Bit = false)
         {

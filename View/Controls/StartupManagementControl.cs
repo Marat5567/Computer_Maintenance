@@ -15,7 +15,11 @@ namespace Computer_Maintenance.View.Controls
         public event EventHandler CopyClipboardClicked;
         public event EventHandler DeleteUnusedRecords_Click;
         public event EventHandler DeleteRegistryRecordClick;
-        public event EventHandler DeleteFolderItemClick;
+        public event EventHandler ViewDetailClick;
+        public event EventHandler CompleteTaskClick;
+        public event EventHandler RunTaskClick;
+        //public event EventHandler CreateRegistryRecordClick;
+        //public event EventHandler DeleteFolderItemClick;
         public (bool isFile, string path) SelectedPath { get; set; }
         public StartupType LastFolderSelectionSource { get; set; }
 
@@ -195,7 +199,11 @@ namespace Computer_Maintenance.View.Controls
         }
         private void listViewTaskScheduler_MouseDown(object sender, MouseEventArgs e)
         {
-
+            if (e.Button == MouseButtons.Right)
+            {
+                ContextMenuStrip contextMenu = CreateContextMenuItem(listViewTaskScheduler.Items.Count, StartupType.TaskScheduler);
+                contextMenu.Show(listViewTaskScheduler, e.Location);
+            }
         }
 
 
@@ -359,10 +367,17 @@ namespace Computer_Maintenance.View.Controls
                     SelectedPath = (isFile: false, path: startupItemRegistry.PathExtracted);
                 }
             }
+            else if (items[0] is TaskSchedulerItem taskSchedulerItem)
+            {
+                if (items.Count == 1)
+                {
+                    SelectedPath = (isFile: true, path: taskSchedulerItem.Path);
+                    LastFolderSelectionSource = taskSchedulerItem.Type;
+                }
+            }
 
-            return items;
+                return items;
         }
-
 
 
         private ContextMenuStrip CreateContextMenuItem(int listViewItemsCount, StartupType startupType)
@@ -370,31 +385,32 @@ namespace Computer_Maintenance.View.Controls
             ContextMenuStrip contextMenu = new ContextMenuStrip();
 
             ToolStripMenuItem openExplorer = new ToolStripMenuItem("Открыть в проводнике");
-            ToolStripMenuItem add = new ToolStripMenuItem("Добавить");
+            //ToolStripMenuItem add = new ToolStripMenuItem("Добавить");
 
             ToolStripMenuItem changeStateItem = null;
             ToolStripMenuItem copyPathItem = null;
             ToolStripMenuItem deleteRegistryItem = null;
             ToolStripMenuItem deleteItemFolder = null;
+            ToolStripMenuItem viewDetailItem = null;
+            ToolStripMenuItem completeTaskItem = null;
+            ToolStripMenuItem runTaskItem = null;
 
             openExplorer.Click += (s, e) => OpenExplorerClicked?.Invoke(this, EventArgs.Empty);
 
             if (listViewItemsCount > 0)
             {
-                changeStateItem = new ToolStripMenuItem("Изменить состояние");
                 copyPathItem = new ToolStripMenuItem("Копировать путь");
 
-
-                contextMenu.Items.Add(changeStateItem);
                 contextMenu.Items.Add(copyPathItem);
 
                 switch (startupType)
                 {
                     case StartupType.StartupFolderCurrentUser:
                     case StartupType.StartupFolderAllUsers:
-                        deleteItemFolder = new ToolStripMenuItem("Удалить из папки");
+                        changeStateItem = new ToolStripMenuItem("Изменить состояние");
+                        //deleteItemFolder = new ToolStripMenuItem("Удалить из папки");
 
-                        deleteItemFolder.Click += (s, e) => DeleteFolderItemClick?.Invoke(this, EventArgs.Empty);
+                        //deleteItemFolder.Click += (s, e) => DeleteFolderItemClick?.Invoke(this, EventArgs.Empty);
                         changeStateItem.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
                         copyPathItem.Click += (s, e) => CopyClipboardClicked?.Invoke(this, EventArgs.Empty);
                         break;
@@ -402,14 +418,25 @@ namespace Computer_Maintenance.View.Controls
                     case StartupType.RegistryCurrentUser:
                     case StartupType.RegistryLocalMachine:
                         deleteRegistryItem = new ToolStripMenuItem("Удалить из реестра");
+                        changeStateItem = new ToolStripMenuItem("Изменить состояние");
+
                         changeStateItem.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
                         copyPathItem.Click += (s, e) => CopyClipboardClicked?.Invoke(this, EventArgs.Empty);
                         deleteRegistryItem.Click += (s, e) => DeleteRegistryRecordClick?.Invoke(this, EventArgs.Empty);
+                        //add.Click += (s, e) => CreateRegistryRecordClick?.Invoke(this, EventArgs.Empty);
                         break;
 
                     case StartupType.TaskScheduler:
-                        changeStateItem.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
+                        viewDetailItem = new ToolStripMenuItem("Дополнительно");
+                        changeStateItem = new ToolStripMenuItem("Включить/Выключить");
+                        completeTaskItem = new ToolStripMenuItem("Завершить выполнение задачи");
+                        runTaskItem = new ToolStripMenuItem("Выполнить задачу");
+
+                        viewDetailItem.Click += (s, e) => ViewDetailClick?.Invoke(this, EventArgs.Empty);
                         copyPathItem.Click += (s, e) => CopyClipboardClicked?.Invoke(this, EventArgs.Empty);
+                        changeStateItem.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
+                        completeTaskItem.Click += (s, e) => CompleteTaskClick?.Invoke(this, EventArgs.Empty);
+                        runTaskItem.Click += (s, e) => RunTaskClick?.Invoke(this, EventArgs.Empty);
                         break;
                 }
             }
@@ -423,22 +450,32 @@ namespace Computer_Maintenance.View.Controls
                         case StartupType.RegistryLocalMachine:
                             openExplorer?.Visible = true;
                             changeStateItem?.Visible = false;
-                            add?.Visible = false;
+                            //add?.Visible = false;
                             deleteRegistryItem?.Visible = false;
                             deleteItemFolder?.Visible = false;
+                            viewDetailItem?.Visible = true;
+                            completeTaskItem?.Visible = true;
+                            runTaskItem?.Visible = true;
                             break;
                     }
                     break;
                 case ApplicationAccess.Access.Admin:
                     openExplorer?.Visible = true;
                     changeStateItem?.Visible = true;
-                    add?.Visible = true;
+                    //add?.Visible = true;
                     deleteRegistryItem?.Visible = true;
                     deleteItemFolder?.Visible = true;
+                    viewDetailItem?.Visible = true;
+                    completeTaskItem?.Visible = true;
+                    runTaskItem?.Visible = true;
                     break;
             }
             contextMenu.Items.Add(openExplorer);
 
+            if (viewDetailItem != null)
+            {
+                contextMenu.Items.Add(viewDetailItem);
+            }
             if (copyPathItem != null)
             {
                 contextMenu.Items.Add(copyPathItem);
@@ -446,6 +483,14 @@ namespace Computer_Maintenance.View.Controls
             if (changeStateItem != null)
             {
                 contextMenu.Items.Add(changeStateItem);
+            }
+            if (completeTaskItem != null)
+            {
+                contextMenu.Items.Add(completeTaskItem);
+            }
+            if (runTaskItem != null)
+            {
+                contextMenu.Items.Add(runTaskItem);
             }
             if (deleteRegistryItem != null)
             {
@@ -455,7 +500,9 @@ namespace Computer_Maintenance.View.Controls
             {
                 contextMenu.Items.Add(deleteItemFolder);
             }
-            contextMenu.Items.Add(add);
+   
+            //contextMenu.Items.Add(add);
+
             return contextMenu;
         }
 
