@@ -1,5 +1,5 @@
 ﻿using Computer_Maintenance.Model.Enums.StartupManagement;
-using Computer_Maintenance.Model.Structs.StartupManagement;
+
 
 namespace Computer_Maintenance.View.Interfaces
 {
@@ -14,11 +14,24 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler ViewDetailClick;
         event EventHandler CompleteTaskClick;
         event EventHandler RunTaskClick;
-        //event EventHandler CreateRegistryRecordClick;
-        //event EventHandler DeleteFolderItemClick;
+        event EventHandler DeleteTaskClick;
+        event EventHandler<SelectionChangedEventArgs> SelectionChanged;
+
         (bool isFile, string path) SelectedPath { get; set; }
-        public StartupType LastFolderSelectionSource { get; set; }
+        StartupType LastFolderSelectionSource { get; set; }
+
         void DisplayItems(List<object> items, StartupType type);
-        public List<object> GetSelectedItems();
+    }
+
+    public class SelectionChangedEventArgs : EventArgs
+    {
+        public List<object> SelectedItems { get; }
+        public StartupType SelectionSource { get; }
+
+        public SelectionChangedEventArgs(List<object> selectedItems, StartupType selectionSource)
+        {
+            SelectedItems = selectedItems;
+            SelectionSource = selectionSource;
+        }
     }
 }

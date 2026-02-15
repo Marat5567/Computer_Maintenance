@@ -6,10 +6,8 @@ using Computer_Maintenance.View.Forms;
 using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security;
+
 
 namespace Computer_Maintenance.Model.Models
 {
@@ -101,7 +99,7 @@ namespace Computer_Maintenance.Model.Models
                         foreach (string valueName in valueNames)
                         {
                             object value = key.GetValue(valueName);
-                            string extractedPath = ExtractRegistryPath(value?.ToString());
+                            string extractedPath = ExtractPath(value?.ToString());
 
                             StartupItemRegistry item = new StartupItemRegistry
                             {
@@ -131,7 +129,7 @@ namespace Computer_Maintenance.Model.Models
                         foreach (string valueName in valueNames)
                         {
                             object value = key.GetValue(valueName);
-                            string extractedPath = ExtractRegistryPath(value?.ToString());
+                            string extractedPath = ExtractPath(value?.ToString());
 
                             StartupItemRegistry item = new StartupItemRegistry
                             {
@@ -153,100 +151,205 @@ namespace Computer_Maintenance.Model.Models
         {
             using (TaskService ts = new TaskService())
             {
-                TaskCollection tasks = ts.RootFolder.GetTasks();
-                foreach (Microsoft.Win32.TaskScheduler.Task task in tasks)
+                foreach (var task in ts.RootFolder.GetTasks())
                 {
-                    string executablePathFromTask = GetExecutablePathFromTask(task);
-                    string pathExtracted = ExtractTaskSchedulerPath(executablePathFromTask);
+                    try
+                    {
+                        string originalCmd = string.Empty;
+                        string exeFullPath = string.Empty;
+                        string args = string.Empty;
 
-                    
-                    string author = task.Definition?.RegistrationInfo?.Author ?? "Неизвестно";
-                    string description = task.Definition?.RegistrationInfo?.Description ?? String.Empty;
-                    DateTime created = task?.Definition?.RegistrationInfo?.Date ?? DateTime.MinValue;
-                    TaskSchedulerItem item = new TaskSchedulerItem
-                    {
-                        File = task.Name,
-                        Name = GetNameExe(pathExtracted),
-                        Path = pathExtracted,
-                        State = task.State,
-                        Type = startupType,
-                        Author = author,
-                        Description = description,
-                        Created = created,
-                    };
-                    TaskSchedulerItems.Add(item);
-                }
-            }
-            string GetExecutablePathFromTask(Microsoft.Win32.TaskScheduler.Task task)
-            {
-                try
-                {
-                    foreach (Microsoft.Win32.TaskScheduler.Action? action in task.Definition.Actions)
-                    {
-                        if (action is ExecAction execAction)
+                        var actions = task.Definition?.Actions;
+                        if (actions != null)
                         {
-                            return execAction.Path;
+                            foreach (var action in actions)
+                            {
+                                if (action is ExecAction exec)
+                                {
+                                    exeFullPath = exec.Path ?? string.Empty;
+                                    args = exec.Arguments ?? string.Empty;
+                                    originalCmd = string.IsNullOrWhiteSpace(args) ? exeFullPath : exeFullPath + " " + args;
+                                    break;
+                                }
+                                else if (action is ComHandlerAction com)
+                                {
+                                    originalCmd = com.ClassId.ToString();
+                                    break;
+                                }
+                            }
                         }
+
+                        string pathExtracted = ExtractPath(exeFullPath);
+                        TaskSchedulerItem item = new TaskSchedulerItem
+                        {
+                            File = task.Name,
+                            NameExtractedFromPath = GetNameExe(pathExtracted),
+                            PathExtracted = pathExtracted,
+                            OriginalPath = originalCmd,
+                            Arguments = args,
+                            State = task.State,
+                            Type = startupType,
+                            Author = task.Definition?.RegistrationInfo?.Author ?? "Неизвестно",
+                            Description = task.Definition?.RegistrationInfo?.Description ?? string.Empty,
+                            Created = task.Definition?.RegistrationInfo?.Date ?? DateTime.MinValue,
+                            NextTimeStart = task.NextRunTime,
+                            OldTimeStart = task.LastRunTime,
+                            ResultLastStart = task.LastTaskResult,
+                            Trigger = task.Definition?.Triggers.Count > 0 ? string.Join("; ", task.Definition.Triggers.Select(t => t.ToString())) : "Нет триггера"
+                        };
+
+                        collectionToAdd.Add(item);
+                    }
+                    catch
+                    {
+                        continue;
                     }
                 }
-                catch {}
-                return String.Empty;
             }
         }
+
+        //private void LoadTaskSchedulerItems(StartupType startupType, List<TaskSchedulerItem> collectionToAdd)
+        //{
+        //    using (TaskService ts = new TaskService())
+        //    {
+        //        TaskCollection tasks = ts.RootFolder.GetTasks();
+        //        foreach (Microsoft.Win32.TaskScheduler.Task task in tasks)
+        //        {
+        //            string executablePathFromTask = GetExecutablePathFromTask(task);
+        //            string pathExtracted = ExtractTaskSchedulerPath(executablePathFromTask);
+
+
+        //            string author = task.Definition?.RegistrationInfo?.Author ?? "Неизвестно";
+        //            string description = task.Definition?.RegistrationInfo?.Description ?? String.Empty;
+        //            DateTime created = task?.Definition?.RegistrationInfo?.Date ?? DateTime.MinValue;
+        //            TaskSchedulerItem item = new TaskSchedulerItem
+        //            {
+        //                File = task.Name,
+        //                Name = GetNameExe(pathExtracted),
+        //                Path = pathExtracted,
+        //                State = task.State,
+        //                Type = startupType,
+        //                Author = author,
+        //                Description = description,
+        //                Created = created,
+        //            };
+        //            TaskSchedulerItems.Add(item);
+        //        }
+        //    }
+        //    string GetExecutablePathFromTask(Microsoft.Win32.TaskScheduler.Task task)
+        //    {
+        //        try
+        //        {
+        //            foreach (Microsoft.Win32.TaskScheduler.Action? action in task.Definition.Actions)
+        //            {
+        //                if (action is ExecAction execAction)
+        //                {
+        //                    return execAction.Path;
+        //                }
+        //            }
+        //        }
+        //        catch { }
+        //        return String.Empty;
+        //    }
+        //}
         private unsafe void LoadFolderStartupItems(StartupType startupType, List<StartupItemFolder> collectionToAdd, string path)
         {
             if (!Directory.Exists(path)) return;
 
-            foreach (string extensions in EXECUTABLE_EXTENSIONS)
+            string searchPath = path.EndsWith("\\") ? path + "*" : path + $"\\*";
+
+            FileApi.WIN32_FIND_DATA findData;
+            IntPtr hFind = FileApi.FindFirstFileExW(
+                searchPath,
+                FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
+                &findData,
+                FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+                IntPtr.Zero,
+                FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
+
+            if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { return; }
+
+            try
             {
-                string searchPath = path.EndsWith("\\") ? path + "*" : path + $"\\*{extensions}";
-
-                FileApi.WIN32_FIND_DATA findData;
-                IntPtr hFind = FileApi.FindFirstFileExW(
-                    searchPath,
-                    FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
-                    &findData,
-                    FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
-                    IntPtr.Zero,
-                    FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
-
-                if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { continue; }
-
-                try
+                do
                 {
-                    do
+                    string name = findData.GetFileName();
+                    if (name == "." || name == "..") { continue; }
+                    if (name.EndsWith(".ini", StringComparison.OrdinalIgnoreCase)) { continue; }
+
+                    if ((findData.dwFileAttributes & (int)FileAttribute.Directory) != 0 ||
+                        (findData.dwFileAttributes & (int)FileAttribute.System) != 0 ||
+                        (findData.dwFileAttributes & (int)FileAttributes.ReparsePoint) != 0)
                     {
-                        string name = findData.GetFileName();
-                        if (name == "." || name == "..") { continue; }
-
-                        string fullPath = Path.Combine(path, name);
-
-                        StartupState state;
-
-                        StartupItemFolder item = new StartupItemFolder
-                        {
-                            NameExtracted = name,
-                            PathExtracted = fullPath,
-                            Type = startupType,
-                            State = GetStartupState(name, startupType)
-                        };
-                        collectionToAdd.Add(item);
-
+                        continue;
                     }
-                    while (FileApi.FindNextFileW(hFind, &findData));
+
+                    string fullPath = Path.Combine(path, name);
+
+                    StartupItemFolder item = new StartupItemFolder
+                    {
+                        NameExtracted = name,
+                        PathExtracted = fullPath,
+                        Type = startupType,
+                        State = GetStartupState(name, startupType)
+                    };
+                    collectionToAdd.Add(item);
+
                 }
-                finally
-                {
-                    FileApi.FindClose(hFind);
-                }
+                while (FileApi.FindNextFileW(hFind, &findData));
             }
+            finally
+            {
+                FileApi.FindClose(hFind);
+            }
+            //foreach (string extensions in EXECUTABLE_EXTENSIONS)
+            //{
+            //    string searchPath = path.EndsWith("\\") ? path + "*" : path + $"\\*{extensions}";
+
+            //    FileApi.WIN32_FIND_DATA findData;
+            //    IntPtr hFind = FileApi.FindFirstFileExW(
+            //        searchPath,
+            //        FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
+            //        &findData,
+            //        FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+            //        IntPtr.Zero,
+            //        FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
+
+            //    if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { continue; }
+
+            //    try
+            //    {
+            //        do
+            //        {
+            //            string name = findData.GetFileName();
+            //            if (name == "." || name == "..") { continue; }
+
+            //            string fullPath = Path.Combine(path, name);
+
+            //            StartupItemFolder item = new StartupItemFolder
+            //            {
+            //                NameExtracted = name,
+            //                PathExtracted = fullPath,
+            //                Type = startupType,
+            //                State = GetStartupState(name, startupType)
+            //            };
+            //            collectionToAdd.Add(item);
+
+            //        }
+            //        while (FileApi.FindNextFileW(hFind, &findData));
+            //    }
+            //    finally
+            //    {
+            //        FileApi.FindClose(hFind);
+            //    }
+            //}
 
         }
 
 
-        public void ViewDetailTaskSchedulerItem(string author, string description, DateTime created)
+        public void ViewDetailTaskSchedulerItem(string author, string originalScript, string description, DateTime created, DateTime lastStart, DateTime oldStart, int resultLastStart, string trigger)
         {
-            ViewDetailTaskSchedulerItem_Form form = new ViewDetailTaskSchedulerItem_Form(author, description, created);
+            ViewDetailTaskSchedulerItem_Form form = new ViewDetailTaskSchedulerItem_Form(author, originalScript, description, created, lastStart, oldStart, resultLastStart, trigger);
             form.StartPosition = FormStartPosition.WindowsDefaultLocation;
             form.Show();
         }
@@ -284,7 +387,7 @@ namespace Computer_Maintenance.Model.Models
                 }
 
                 if (string.IsNullOrEmpty(directoryPath)) { return; }
-                
+
                 Process.Start("explorer.exe", $"\"{directoryPath}\"");
             }
         }
@@ -306,7 +409,7 @@ namespace Computer_Maintenance.Model.Models
                     return RegistryStartupItems_AllUsers.Cast<object>().ToList();
                 case StartupType.StartupFolderCurrentUser:
                     return FolderStartupItems_CurrentUser.Cast<object>().ToList();
-                case StartupType .StartupFolderAllUsers:
+                case StartupType.StartupFolderAllUsers:
                     return FolderStartupItems_AllUsers.Cast<object>().ToList();
                 case StartupType.TaskScheduler:
                     return TaskSchedulerItems.Cast<object>().ToList();
@@ -730,34 +833,8 @@ namespace Computer_Maintenance.Model.Models
                 key?.Dispose();
             }
         }
-       
 
-        private string ExtractTaskSchedulerPath(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path)) { return string.Empty; }
-
-            string trimmedPath = path.Trim();
-
-            // Если путь начинается с двойных кавычек ""
-            if (trimmedPath.StartsWith("\"\"") && trimmedPath.Length > 2)
-            {
-                int endQuoteIndex = trimmedPath.IndexOf('"', 2);
-                if (endQuoteIndex == -1) { return path; }
-
-                trimmedPath = trimmedPath.Substring(2, endQuoteIndex - 2);
-            }
-            // Если путь начинается с одной кавычки "
-            else if (trimmedPath.StartsWith("\"") && trimmedPath.Length > 1)
-            {
-                int endQuoteIndex = trimmedPath.IndexOf('"', 1);
-                if (endQuoteIndex == -1) { return path; }
-
-                trimmedPath = trimmedPath.Substring(1, endQuoteIndex - 1);
-            }
-
-            return CheckExistsPath(trimmedPath);
-        }
-        private string ExtractRegistryPath(string path)
+        private string ExtractPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) { return string.Empty; }
 
@@ -768,13 +845,16 @@ namespace Computer_Maintenance.Model.Models
             {
                 return expandedPath;
             }
-            // Убираем кавычки в начале и конце
-            if (trimmedPath.StartsWith("\"") && trimmedPath.Length > 1)
+            if ((trimmedPath.StartsWith("\"") || trimmedPath.StartsWith("\"\"")) && trimmedPath.Length > 1)
             {
+                // Находим первую закрывающую кавычку после начальной
                 int endQuoteIndex = trimmedPath.IndexOf('"', 1);
-                if (endQuoteIndex == -1) { return path; }
-
-                trimmedPath = trimmedPath.Substring(1, endQuoteIndex - 1);
+                if (endQuoteIndex > 0)
+                {
+                    // Вычисляем смещение в зависимости от того, сколько кавычек в начале
+                    int startOffset = trimmedPath.StartsWith("\"\"") ? 2 : 1;
+                    trimmedPath = trimmedPath.Substring(startOffset, endQuoteIndex - startOffset);
+                }
             }
             else if (trimmedPath.Length > 1)
             {
@@ -815,3 +895,4 @@ namespace Computer_Maintenance.Model.Models
 
     }
 }
+
