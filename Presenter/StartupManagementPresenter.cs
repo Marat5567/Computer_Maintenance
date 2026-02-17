@@ -13,6 +13,7 @@ namespace Computer_Maintenance.Presenter
 
         private List<object> _selectedItems = new List<object>();
         private StartupType _lastSelectedType = StartupType.None;
+        private string _currentSelectedPath = string.Empty;
 
         public StartupManagementPresenter(IStartupManagementView view, StartupManagementModel model)
         {
@@ -37,7 +38,7 @@ namespace Computer_Maintenance.Presenter
             _selectedItems = e.SelectedItems;
             _lastSelectedType = e.SelectionSource;
 
-            UpdateSelectedPathInfo();
+            UpdateSelectedPathInfo(e.SelectionSource);
         }
 
         private void OnDeleteTaskItem(object s, EventArgs e)
@@ -45,12 +46,25 @@ namespace Computer_Maintenance.Presenter
 
         }
 
-        private void UpdateSelectedPathInfo()
+        private void UpdateSelectedPathInfo(StartupType type)
         {
+            _currentSelectedPath = String.Empty;
+
             if (_selectedItems.Count == 0)
             {
-                _view.SelectedPath = (isFile: false, path: String.Empty);
-                _view.LastFolderSelectionSource = _lastSelectedType;
+  
+                if (type == StartupType.StartupFolderCurrentUser)
+                {
+                    _currentSelectedPath = StartupManagementModel.FOLDER_CURRENT_USER;
+                }
+                else if (type == StartupType.StartupFolderAllUsers)
+                {
+                    _currentSelectedPath = StartupManagementModel.FOLDER_All_USERS;
+                }
+                else
+                {
+                    _currentSelectedPath = String.Empty;
+                }
                 return;
             }
 
@@ -60,31 +74,34 @@ namespace Computer_Maintenance.Presenter
 
                 if (firstItem is StartupItemFolder folderItem)
                 {
-                    _view.SelectedPath = (isFile: true, path: folderItem.PathExtracted);
-                    _view.LastFolderSelectionSource = folderItem.Type;
+                    _currentSelectedPath = folderItem.Path;
+                    //_view.SelectedPath = (isFile: true, path: folderItem.PathExtracted);
+                    //_view.LastFolderSelectionSource = folderItem.Type;
                 }
                 else if (firstItem is StartupItemRegistry registryItem)
                 {
-                    _view.SelectedPath = (isFile: true, path: registryItem.Path);
+                    _currentSelectedPath = registryItem.Path;
+                    //_view.SelectedPath = (isFile: true, path: registryItem.Path);
                 }
                 else if (firstItem is TaskSchedulerItem taskItem)
                 {
-                    _view.SelectedPath = (isFile: true, path: taskItem.Path);
-                    _view.LastFolderSelectionSource = taskItem.Type;
+                    _currentSelectedPath = taskItem.Path;
+                    //_view.SelectedPath = (isFile: true, path: taskItem.Path);
+                    //_view.LastFolderSelectionSource = taskItem.Type;
                 }
             }
-            else
-            {
-                if (_selectedItems[0] is StartupItemRegistry registryItem)
-                {
-                    _view.SelectedPath = (isFile: false, path: registryItem.Path);
-                }
-                else if (_selectedItems[0] is StartupItemFolder folderItem)
-                {
-                    _view.SelectedPath = (isFile: false, path: folderItem.PathExtracted);
-                    _view.LastFolderSelectionSource = folderItem.Type;
-                }
-            }
+            //else
+            //{
+            //    if (_selectedItems[0] is StartupItemRegistry registryItem)
+            //    {
+            //        _view.SelectedPath = (isFile: false, path: registryItem.Path);
+            //    }
+            //    else if (_selectedItems[0] is StartupItemFolder folderItem)
+            //    {
+            //        _view.SelectedPath = (isFile: false, path: folderItem.Path);
+            //        _view.LastFolderSelectionSource = folderItem.Type;
+            //    }
+            //}
         }
 
         private void OnLoadControl(object s, EventArgs e)
@@ -255,7 +272,7 @@ namespace Computer_Maintenance.Presenter
                 }
                 else if (item is StartupItemFolder folderItem)
                 {
-                    if (_model.ChangeStateStartup(folderItem.NameExtracted, folderItem.PathExtracted, folderItem.Type))
+                    if (_model.ChangeStateStartup(folderItem.NameExtracted, folderItem.Path, folderItem.Type))
                     {
                         typesToRefresh.Add(folderItem.Type);
                     }
@@ -288,21 +305,28 @@ namespace Computer_Maintenance.Presenter
 
             foreach (object item in _selectedItems)
             {
-                if (item is StartupItemRegistry registryItem)
+                try
                 {
-                    _model.CopyToClipboard(registryItem.Path);
+                    if (item is StartupItemRegistry registryItem)
+                    {
+                        _model.CopyToClipboard(registryItem.Path);
+                    }
+                    else if (item is StartupItemFolder folderItem)
+                    {
+                        _model.CopyToClipboard(folderItem.Path);
+                    }
+                    else if (item is TaskSchedulerItem taskSchedulerItem)
+                    {
+                        _model.CopyToClipboard(taskSchedulerItem.Path);
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
-                else if (item is StartupItemFolder folderItem)
+                catch (Exception ex)
                 {
-                    _model.CopyToClipboard(folderItem.PathExtracted);
-                }
-                else if (item is TaskSchedulerItem taskSchedulerItem)
-                {
-                    _model.CopyToClipboard(taskSchedulerItem.Path);
-                }
-                else
-                {
-                    return;
+                    ShowError(ex.Message);
                 }
             }
         }
@@ -311,17 +335,21 @@ namespace Computer_Maintenance.Presenter
         {
             try
             {
-                _model.OpenPathToExplorer(_view.SelectedPath.path);
+                _model.OpenPathToExplorer(_currentSelectedPath);
             }
             catch (Exception ex)
             {
-                MessageService.ShowMessage(
+                ShowError(ex.Message);
+            }
+        }
+        private void ShowError(string msg)
+        {
+            MessageService.ShowMessage(
                     owner: null,
-                    msg: ex.Message,
+                    msg: msg,
                     headerName: "Ошибка",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-            }
         }
     }
 }

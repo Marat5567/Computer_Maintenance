@@ -30,8 +30,8 @@ namespace Computer_Maintenance.Model.Models
         private const byte DISABLED_FLAG = 0x03;
 
         private readonly string[] EXECUTABLE_EXTENSIONS = { ".exe", ".com", ".scr", ".msc", ".bat", ".cmd", ".ps1", ".vbs", ".js", ".wsf", ".ws", ".hta", ".lnk", ".msi", ".msp", ".msix", ".appx", ".appxbundle", ".msixbundle" };
-        private readonly string FOLDER_CURRENT_USER = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
-        private readonly string FOLDER_All_USERS = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
+        public static readonly string FOLDER_CURRENT_USER = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
+        public static readonly string FOLDER_All_USERS = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
 
         private List<StartupItemRegistry> RegistryStartupItems_CurrentUser { get; set; } = new List<StartupItemRegistry>();
         private List<StartupItemRegistry> RegistryStartupItems_AllUsers { get; set; } = new List<StartupItemRegistry>();
@@ -243,7 +243,7 @@ namespace Computer_Maintenance.Model.Models
                     StartupItemFolder item = new StartupItemFolder
                     {
                         NameExtracted = name,
-                        PathExtracted = fullPath,
+                        Path = fullPath,
                         Type = startupType,
                         State = GetStartupState(name, startupType)
                     };
@@ -328,9 +328,18 @@ namespace Computer_Maintenance.Model.Models
 
         public void CopyToClipboard(string path)
         {
-            if (string.IsNullOrWhiteSpace(path)) { return; }
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("Путь пустой", nameof(path));
 
-            Clipboard.SetText(path);
+            try
+            {
+                Clipboard.SetText(path);
+            }
+            catch (System.Runtime.InteropServices.COMException ex)
+            {
+                // Clipboard иногда выбрасывает COMException, если занят другим процессом
+                throw new InvalidOperationException("Не удалось скопировать в буфер обмена", ex);
+            }
         }
 
         public List<object> GetStartupItems(StartupType type)

@@ -20,36 +20,30 @@ namespace Computer_Maintenance.View.Controls
         public event EventHandler DeleteTaskClick;
         public event EventHandler<SelectionChangedEventArgs> SelectionChanged;
 
-        public (bool isFile, string path) SelectedPath { get; set; }
-        public StartupType LastFolderSelectionSource { get; set; }
-
-        private ListView _activeListView;
-
         public StartupManagementControl()
         {
             InitializeComponent();
             labelInfo.Text = String.Empty;
 
-            listViewFolderCurrentUser.MouseDown += ListView_Activate;
-            listViewFolderAllUsers.MouseDown += ListView_Activate;
-            listViewRegistryCurrentUser.MouseDown += ListView_Activate;
-            listViewRegistryAllUsers.MouseDown += ListView_Activate;
-            listViewTaskScheduler.MouseDown += ListView_Activate;
 
-            listViewFolderCurrentUser.SelectedIndexChanged += OnListViewSelectedIndexChanged;
+            listViewFolderCurrentUser.ItemSelectionChanged += OnListViewSelectedIndexChanged;
+            listViewFolderCurrentUser.MouseDown += OnListViewSelectedIndexChanged;
+
             listViewFolderAllUsers.SelectedIndexChanged += OnListViewSelectedIndexChanged;
+            listViewFolderAllUsers.MouseDown += OnListViewSelectedIndexChanged;
+
             listViewRegistryCurrentUser.SelectedIndexChanged += OnListViewSelectedIndexChanged;
+
             listViewRegistryAllUsers.SelectedIndexChanged += OnListViewSelectedIndexChanged;
+
             listViewTaskScheduler.SelectedIndexChanged += OnListViewSelectedIndexChanged;
         }
-
+      
         private void OnListViewSelectedIndexChanged(object sender, EventArgs e)
         {
             ListView listView = sender as ListView;
             if (listView == null)
                 return;
-
-            _activeListView = listView;
 
             List<object> selectedItems = new List<object>();
 
@@ -75,50 +69,6 @@ namespace Computer_Maintenance.View.Controls
 
             SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(selectedItems, selectionSource));
 
-            UpdateSelectedPathInfo(selectedItems, selectionSource);
-        }
-
-        private void UpdateSelectedPathInfo(List<object> selectedItems, StartupType source)
-        {
-            SelectedPath = (isFile: false, path: String.Empty);
-            LastFolderSelectionSource = StartupType.None;
-
-            if (selectedItems.Count == 0)
-            {
-                if (source == StartupType.StartupFolderCurrentUser ||
-                    source == StartupType.StartupFolderAllUsers)
-                {
-                    LastFolderSelectionSource = source;
-                }
-                return;
-            }
-
-            if (selectedItems.Count == 1)
-            {
-                object firstItem = selectedItems[0];
-
-                if (firstItem is StartupItemFolder folderItem)
-                {
-                    SelectedPath = (isFile: true, path: folderItem.PathExtracted);
-                    LastFolderSelectionSource = folderItem.Type;
-                }
-                else if (firstItem is StartupItemRegistry registryItem)
-                {
-                    SelectedPath = (isFile: true, path: registryItem.Path);
-                }
-                else if (firstItem is TaskSchedulerItem taskItem)
-                {
-                    SelectedPath = (isFile: true, path: taskItem.Path);
-                    LastFolderSelectionSource = taskItem.Type;
-                }
-            }
-            else
-            {
-                if (selectedItems[0] is StartupItemRegistry registryItem)
-                {
-                    SelectedPath = (isFile: false, path: registryItem.Path);
-                }
-            }
         }
 
         private void StartupManagementControl_Load(object sender, EventArgs e)
@@ -201,20 +151,29 @@ namespace Computer_Maintenance.View.Controls
             tabPageTaskSсheduler.Enter += TabPage_Enter;
         }
 
-        private void TabPage_Enter(object s, EventArgs e)
+        private void TabPage_Enter(object sender, EventArgs e)
         {
-            TabPage clickedTab = s as TabPage;
-            labelInfo.Text = String.Empty;
+            TabPage currentTab = sender as TabPage;
+            if (currentTab == null) return;
 
-            if (clickedTab != null)
+            // Сбрасываем выбор всех ListView, кроме текущей вкладки
+            if (currentTab != tabPageRegistryCurrentUser) listViewRegistryCurrentUser.SelectedItems.Clear();
+            if (currentTab != tabPageRegistryAllUsers) listViewRegistryAllUsers.SelectedItems.Clear();
+            if (currentTab != tabPageFolderCurrentUser) listViewFolderCurrentUser.SelectedItems.Clear();
+            if (currentTab != tabPageFolderAllUsers) listViewFolderAllUsers.SelectedItems.Clear();
+            if (currentTab != tabPageTaskSсheduler) listViewTaskScheduler.SelectedItems.Clear();
+
+
+            // Сброс информации на label
+            labelInfo.Text = string.Empty;
+
+            // Ваши сообщения о правах администратора
+            if (currentTab == tabPageRegistryAllUsers || currentTab == tabPageFolderAllUsers)
             {
-                if (clickedTab == tabPageRegistryAllUsers || clickedTab == tabPageFolderAllUsers)
+                if (ApplicationAccess.CurrentAccess == ApplicationAccess.Access.User)
                 {
-                    if (ApplicationAccess.CurrentAccess == ApplicationAccess.Access.User)
-                    {
-                        labelInfo.ForeColor = Color.Red;
-                        labelInfo.Text = "Нету прав на этот раздел реестра(только чтение), необходимо парва АДМИНА";
-                    }
+                    labelInfo.ForeColor = Color.Red;
+                    labelInfo.Text = "Нету прав на этот раздел реестра (только чтение), необходимо права АДМИНА";
                 }
             }
         }
@@ -386,7 +345,7 @@ namespace Computer_Maintenance.View.Controls
                     case StartupItemFolder folderItem:
                         viewItem = new ListViewItem(folderItem.NameExtracted);
                         viewItem.SubItems.Add(GetStateText(folderItem.State));
-                        viewItem.SubItems.Add(folderItem.PathExtracted);
+                        viewItem.SubItems.Add(folderItem.Path);
                         viewItem.Tag = folderItem;
                         break;
                     case TaskSchedulerItem taskSchedulerItem:
@@ -469,7 +428,7 @@ namespace Computer_Maintenance.View.Controls
                 deleteItem = new ToolStripMenuItem("Удалить из реестра");
 
                 changeState.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
-                deleteItem.Click += (s, e) => ChangeStateSelectedItems?.Invoke(this, EventArgs.Empty);
+                deleteItem.Click += (s, e) => DeleteRegistryRecordClick?.Invoke(this, EventArgs.Empty);
             }
         }
         private ContextMenuStrip CreateContextMenuItemForFolder(StartupType startupType, ApplicationAccess.Access access)
@@ -554,27 +513,6 @@ namespace Computer_Maintenance.View.Controls
                     }
                 );
             return contextMenuStrip;
-        }
-        private void ListView_Activate(object sender, MouseEventArgs e)
-        {
-            ListView current = sender as ListView;
-            if (current == null)
-            {
-                return;
-            }
-
-            if (e.Button == MouseButtons.Left)
-            {
-                if (_activeListView != null && _activeListView != current)
-                {
-                    _activeListView.SelectedItems.Clear();
-                }
-                _activeListView = current;
-            }
-            else if (e.Button == MouseButtons.Right)
-            {
-                _activeListView = current;
-            }
         }
     }
 }

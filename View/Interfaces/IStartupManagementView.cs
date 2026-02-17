@@ -17,9 +17,6 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler DeleteTaskClick;
         event EventHandler<SelectionChangedEventArgs> SelectionChanged;
 
-        (bool isFile, string path) SelectedPath { get; set; }
-        StartupType LastFolderSelectionSource { get; set; }
-
         void DisplayItems(List<object> items, StartupType type);
     }
 
