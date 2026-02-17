@@ -3,8 +3,6 @@ using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Models;
 using Computer_Maintenance.Model.Structs.StartupManagement;
 using Computer_Maintenance.View.Interfaces;
-using Microsoft.Win32;
-using System.Xml.Linq;
 
 namespace Computer_Maintenance.Presenter
 {
@@ -311,7 +309,19 @@ namespace Computer_Maintenance.Presenter
 
         private void OnOpenExplorerClicked(object s, EventArgs e)
         {
-            _model.OpenPathToExplorer(_view.SelectedPath.isFile, _view.SelectedPath.path, _view.LastFolderSelectionSource);
+            try
+            {
+                _model.OpenPathToExplorer(_view.SelectedPath.path);
+            }
+            catch (Exception ex)
+            {
+                MessageService.ShowMessage(
+                    owner: null,
+                    msg: ex.Message,
+                    headerName: "Ошибка",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
     }
 }

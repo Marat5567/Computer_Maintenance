@@ -267,43 +267,64 @@ namespace Computer_Maintenance.Model.Models
             form.Show();
         }
 
-        public void OpenPathToExplorer(bool isFile, string path, StartupType startupType)
+        public void OpenPathToExplorer(string path)
         {
-            if (isFile)
+            if (string.IsNullOrWhiteSpace(path))
             {
-                if (File.Exists(path))
-                {
-                    Process.Start("explorer.exe", $"/select,\"{path}\"");
-                }
-                else
-                {
-                    ShowInfo("Файл не существует, можете удалить запись из реестра");
-                }
+                throw new ArgumentException("Не удалось открыть путь: путь пустой", nameof(path));
+            }
+            if (Directory.Exists(path))
+            {
+                Process.Start("explorer.exe", $"\"{path}\"");
+            }
+            else if (File.Exists(path))
+            {
+                Process.Start("explorer.exe", $"/select,\"{path}\"");
             }
             else
             {
-                string directoryPath = String.Empty;
-
-                switch (startupType)
-                {
-                    case StartupType.StartupFolderCurrentUser:
-                        directoryPath = FOLDER_CURRENT_USER;
-                        break;
-                    case StartupType.StartupFolderAllUsers:
-                        directoryPath = FOLDER_All_USERS;
-                        break;
-                    case StartupType.None:
-                        break;
-                    default:
-                        directoryPath = Path.GetDirectoryName(path);
-                        break;
-                }
-
-                if (string.IsNullOrEmpty(directoryPath)) { return; }
-
-                Process.Start("explorer.exe", $"\"{directoryPath}\"");
+                throw new FileNotFoundException($"Путь не существует: {path}");
             }
         }
+
+
+        //public void OpenPathToExplorer(bool isFile, string path, StartupType startupType)
+        //{
+        //    if (isFile)
+        //    {
+        //        if (File.Exists(path))
+        //        {
+        //            Process.Start("explorer.exe", $"/select,\"{path}\"");
+        //        }
+        //        else
+        //        {
+        //            ShowInfo("Файл не существует, можете удалить запись из реестра");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        string directoryPath = String.Empty;
+
+        //        switch (startupType)
+        //        {
+        //            case StartupType.StartupFolderCurrentUser:
+        //                directoryPath = FOLDER_CURRENT_USER;
+        //                break;
+        //            case StartupType.StartupFolderAllUsers:
+        //                directoryPath = FOLDER_All_USERS;
+        //                break;
+        //            case StartupType.None:
+        //                break;
+        //            default:
+        //                directoryPath = Path.GetDirectoryName(path);
+        //                break;
+        //        }
+
+        //        if (string.IsNullOrEmpty(directoryPath)) { return; }
+
+        //        Process.Start("explorer.exe", $"\"{directoryPath}\"");
+        //    }
+        //}
 
         public void CopyToClipboard(string path)
         {
