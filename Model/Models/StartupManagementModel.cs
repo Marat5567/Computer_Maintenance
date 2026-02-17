@@ -100,12 +100,11 @@ namespace Computer_Maintenance.Model.Models
                             object? value = key.GetValue(valueName);
                             string? valueStr = value?.ToString();
 
-                            (string? pathExtracted, string[]? argrsExtracted) = CommandLineParser.Parse(valueStr);
-
+                            string pathExtracted = ExtractPath(valueStr);
                             StartupItemRegistry item = new StartupItemRegistry
                             {
                                 RegistryName = valueName,
-                                Path = !string.IsNullOrWhiteSpace(pathExtracted) ? pathExtracted : valueStr ?? string.Empty,
+                                Path = pathExtracted ?? string.Empty,
                                 Type = startupType,
                                 State = GetStartupState(valueName, startupType)
                             };
@@ -131,12 +130,12 @@ namespace Computer_Maintenance.Model.Models
                             object? value = key.GetValue(valueName);
                             string? valueStr = value?.ToString();
 
-                            (string? pathExtracted, string[]? argrsExtracted) = CommandLineParser.Parse(valueStr);
+                            string pathExtracted = ExtractPath(valueStr);
 
                             StartupItemRegistry item = new StartupItemRegistry
                             {
                                 RegistryName = valueName,
-                                Path = !string.IsNullOrWhiteSpace(pathExtracted) ? pathExtracted : valueStr ?? string.Empty,
+                                Path = pathExtracted ?? string.Empty,
                                 Is32Bit = true,
                                 Type = startupType,
                                 State = GetStartupState(valueName, startupType, is32Bit: true)
@@ -183,8 +182,8 @@ namespace Computer_Maintenance.Model.Models
                         string pathExtracted = ExtractPath(exeFullPath);
                         TaskSchedulerItem item = new TaskSchedulerItem
                         {
-                            File = task.Name,
-                            Path = pathExtracted,
+                            Name = task.Name,
+                            Path = pathExtracted ?? String.Empty,
                             Arguments = args,
                             State = task.State,
                             Type = startupType,
@@ -207,50 +206,6 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
-        //private void LoadTaskSchedulerItems(StartupType startupType, List<TaskSchedulerItem> collectionToAdd)
-        //{
-        //    using (TaskService ts = new TaskService())
-        //    {
-        //        TaskCollection tasks = ts.RootFolder.GetTasks();
-        //        foreach (Microsoft.Win32.TaskScheduler.Task task in tasks)
-        //        {
-        //            string executablePathFromTask = GetExecutablePathFromTask(task);
-        //            string pathExtracted = ExtractTaskSchedulerPath(executablePathFromTask);
-
-
-        //            string author = task.Definition?.RegistrationInfo?.Author ?? "Неизвестно";
-        //            string description = task.Definition?.RegistrationInfo?.Description ?? String.Empty;
-        //            DateTime created = task?.Definition?.RegistrationInfo?.Date ?? DateTime.MinValue;
-        //            TaskSchedulerItem item = new TaskSchedulerItem
-        //            {
-        //                File = task.Name,
-        //                Name = GetNameExe(pathExtracted),
-        //                Path = pathExtracted,
-        //                State = task.State,
-        //                Type = startupType,
-        //                Author = author,
-        //                Description = description,
-        //                Created = created,
-        //            };
-        //            TaskSchedulerItems.Add(item);
-        //        }
-        //    }
-        //    string GetExecutablePathFromTask(Microsoft.Win32.TaskScheduler.Task task)
-        //    {
-        //        try
-        //        {
-        //            foreach (Microsoft.Win32.TaskScheduler.Action? action in task.Definition.Actions)
-        //            {
-        //                if (action is ExecAction execAction)
-        //                {
-        //                    return execAction.Path;
-        //                }
-        //            }
-        //        }
-        //        catch { }
-        //        return String.Empty;
-        //    }
-        //}
         private unsafe void LoadFolderStartupItems(StartupType startupType, List<StartupItemFolder> collectionToAdd, string path)
         {
             if (!Directory.Exists(path)) return;
@@ -301,47 +256,6 @@ namespace Computer_Maintenance.Model.Models
             {
                 FileApi.FindClose(hFind);
             }
-            //foreach (string extensions in EXECUTABLE_EXTENSIONS)
-            //{
-            //    string searchPath = path.EndsWith("\\") ? path + "*" : path + $"\\*{extensions}";
-
-            //    FileApi.WIN32_FIND_DATA findData;
-            //    IntPtr hFind = FileApi.FindFirstFileExW(
-            //        searchPath,
-            //        FileApi.FINDEX_INFO_LEVELS.FindExInfoBasic,
-            //        &findData,
-            //        FileApi.FINDEX_SEARCH_OPS.FindExSearchNameMatch,
-            //        IntPtr.Zero,
-            //        FileApi.FINDEX_FLAGS.FIND_FIRST_EX_LARGE_FETCH);
-
-            //    if (hFind.ToInt64() == FileApi.INVALID_HANDLE_VALUE) { continue; }
-
-            //    try
-            //    {
-            //        do
-            //        {
-            //            string name = findData.GetFileName();
-            //            if (name == "." || name == "..") { continue; }
-
-            //            string fullPath = Path.Combine(path, name);
-
-            //            StartupItemFolder item = new StartupItemFolder
-            //            {
-            //                NameExtracted = name,
-            //                PathExtracted = fullPath,
-            //                Type = startupType,
-            //                State = GetStartupState(name, startupType)
-            //            };
-            //            collectionToAdd.Add(item);
-
-            //        }
-            //        while (FileApi.FindNextFileW(hFind, &findData));
-            //    }
-            //    finally
-            //    {
-            //        FileApi.FindClose(hFind);
-            //    }
-            //}
 
         }
 
@@ -712,54 +626,6 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
-        //public void CreateRegistryRecord(StartupType startupType)
-        //{
-
-        //}
-
-        //public void DeleteFolderRecord(string nameFile, string folderPath, StartupType startupType)
-        //{
-        //    if (string.IsNullOrWhiteSpace(folderPath)) { throw new Exception("Путь не может быть пустым"); }
-        //    RegistryKey? keyApprowed = null;
-
-        //    try
-        //    {
-        //        switch (startupType)
-        //        {
-        //            case StartupType.StartupFolderCurrentUser:
-        //                keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_CURRENT_USER_REGISTRY_PATH_APPROWED, true);
-        //                break;
-        //            case StartupType.StartupFolderAllUsers:
-        //                keyApprowed = Registry.CurrentUser.OpenSubKey(STARTUP_FOLDER_ALL_USERS_REGISTRY_PATH_APPROWED, true);
-        //                break;
-        //        }
-
-        //        if (keyApprowed != null)
-        //        {
-        //            keyApprowed?.DeleteValue(nameFile, false);
-        //        }
-
-        //        bool deleted = FileApi.DeleteFileW(folderPath);
-
-        //        if (!deleted)
-        //        {
-        //            int errorCode = Marshal.GetLastWin32Error();
-        //            string errorMessage = new Win32Exception(errorCode).Message;
-
-        //            string itemName = string.IsNullOrWhiteSpace(nameFile) ? Path.GetFileName(folderPath) : nameFile;
-        //            throw new IOException($"Не удалось удалить файл '{itemName}'. Код ошибки: {errorCode} - {errorMessage}");
-        //        }
-        //    }
-        //    catch
-        //    {
-        //        throw;
-        //    }
-        //    finally
-        //    {
-        //        keyApprowed?.Dispose(); 
-        //    }
-        //}
-
         private StartupState GetStartupState(string registryName, StartupType startupType, bool is32Bit = false)
         {
             if (string.IsNullOrWhiteSpace(registryName)) { return StartupState.None; }
@@ -845,19 +711,19 @@ namespace Computer_Maintenance.Model.Models
             }
             if ((trimmedPath.StartsWith("\"") || trimmedPath.StartsWith("\"\"")) && trimmedPath.Length > 1)
             {
-                // Находим первую закрывающую кавычку после начальной
-                int endQuoteIndex = trimmedPath.IndexOf('"', 1);
-                if (endQuoteIndex > 0)
+                int startOffset = trimmedPath.StartsWith("\"\"") ? 2 : 1;
+                int endQuoteIndex = trimmedPath.IndexOf('"', startOffset);
+
+                if (endQuoteIndex > startOffset)
                 {
-                    // Вычисляем смещение в зависимости от того, сколько кавычек в начале
-                    int startOffset = trimmedPath.StartsWith("\"\"") ? 2 : 1;
                     trimmedPath = trimmedPath.Substring(startOffset, endQuoteIndex - startOffset);
                 }
             }
+
             else if (trimmedPath.Length > 1)
             {
                 int endEmptyIndex = trimmedPath.IndexOf(' ', 1);
-                if (endEmptyIndex == -1) { return path; }
+                if (endEmptyIndex == -1) { return trimmedPath; }
 
                 trimmedPath = trimmedPath.Substring(0, endEmptyIndex);
             }

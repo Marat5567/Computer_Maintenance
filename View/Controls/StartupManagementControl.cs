@@ -3,7 +3,6 @@ using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Enums.StartupManagement;
 using Computer_Maintenance.Model.Structs.StartupManagement;
 using Computer_Maintenance.View.Interfaces;
-using System.Drawing.Text;
 
 namespace Computer_Maintenance.View.Controls
 {
@@ -179,7 +178,6 @@ namespace Computer_Maintenance.View.Controls
         private void Init_ListViewTaskScheduler()
         {
             listViewTaskScheduler.View = System.Windows.Forms.View.Details;
-            listViewTaskScheduler.Columns.Add("Файл", 150);
             listViewTaskScheduler.Columns.Add("Имя", 180);
             listViewTaskScheduler.Columns.Add("Состояние", 110);
             listViewTaskScheduler.Columns.Add("Путь", 350);
@@ -255,9 +253,9 @@ namespace Computer_Maintenance.View.Controls
 
         private void listViewTaskScheduler_Resize(object sender, EventArgs e)
         {
-            if (listViewTaskScheduler.Columns.Count >= 5)
+            if (listViewTaskScheduler.Columns.Count >= 4)
             {
-                listViewTaskScheduler.Columns[4].Width = listViewTaskScheduler.ClientSize.Width - (listViewTaskScheduler.Columns[0].Width + listViewTaskScheduler.Columns[1].Width + listViewTaskScheduler.Columns[2].Width + listViewTaskScheduler.Columns[3].Width);
+                listViewTaskScheduler.Columns[3].Width = listViewTaskScheduler.ClientSize.Width - (listViewTaskScheduler.Columns[0].Width + listViewTaskScheduler.Columns[1].Width + listViewTaskScheduler.Columns[2].Width);
             }
         }
 
@@ -392,8 +390,7 @@ namespace Computer_Maintenance.View.Controls
                         viewItem.Tag = folderItem;
                         break;
                     case TaskSchedulerItem taskSchedulerItem:
-                        viewItem = new ListViewItem(taskSchedulerItem.File);
-                        viewItem.SubItems.Add(taskSchedulerItem.Path);
+                        viewItem = new ListViewItem(taskSchedulerItem.Name);
                         viewItem.SubItems.Add(taskSchedulerItem.State.ToString());
                         viewItem.SubItems.Add(taskSchedulerItem.Path);
                         viewItem.SubItems.Add(taskSchedulerItem.Arguments);

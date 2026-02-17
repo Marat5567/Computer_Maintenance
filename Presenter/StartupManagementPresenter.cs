@@ -111,7 +111,7 @@ namespace Computer_Maintenance.Presenter
             {
                 if (item is TaskSchedulerItem taskSchedulerItem)
                 {
-                    if (_model.RunTask(taskSchedulerItem.File))
+                    if (_model.RunTask(taskSchedulerItem.Name))
                     {
                         RefreshStartupItems(taskSchedulerItem.Type);
                     }
@@ -128,7 +128,7 @@ namespace Computer_Maintenance.Presenter
             {
                 if (item is TaskSchedulerItem taskSchedulerItem)
                 {
-                    if (_model.CompleteTask(taskSchedulerItem.File))
+                    if (_model.CompleteTask(taskSchedulerItem.Name))
                     {
                         RefreshStartupItems(taskSchedulerItem.Type);
                     }
@@ -264,7 +264,7 @@ namespace Computer_Maintenance.Presenter
                 }
                 else if (item is TaskSchedulerItem taskSchedulerItem)
                 {
-                    if (_model.ChangeStateStartup(taskSchedulerItem.File, taskSchedulerItem.Path, taskSchedulerItem.Type))
+                    if (_model.ChangeStateStartup(taskSchedulerItem.Name, taskSchedulerItem.Path, taskSchedulerItem.Type))
                     {
                         typesToRefresh.Add(taskSchedulerItem.Type);
                     }
