@@ -105,11 +105,11 @@ namespace Computer_Maintenance.View.Controls
                 }
                 else if (firstItem is StartupItemRegistry registryItem)
                 {
-                    SelectedPath = (isFile: true, path: registryItem.PathExtracted);
+                    SelectedPath = (isFile: true, path: registryItem.Path);
                 }
                 else if (firstItem is TaskSchedulerItem taskItem)
                 {
-                    SelectedPath = (isFile: true, path: taskItem.PathExtracted);
+                    SelectedPath = (isFile: true, path: taskItem.Path);
                     LastFolderSelectionSource = taskItem.Type;
                 }
             }
@@ -117,7 +117,7 @@ namespace Computer_Maintenance.View.Controls
             {
                 if (selectedItems[0] is StartupItemRegistry registryItem)
                 {
-                    SelectedPath = (isFile: false, path: registryItem.PathExtracted);
+                    SelectedPath = (isFile: false, path: registryItem.Path);
                 }
             }
         }
@@ -375,9 +375,9 @@ namespace Computer_Maintenance.View.Controls
                 switch (item)
                 {
                     case StartupItemRegistry registryItem:
-                        viewItem = new ListViewItem(registryItem.NameExtracted);
+                        viewItem = new ListViewItem(registryItem.RegistryName);
                         viewItem.SubItems.Add(GetStateText(registryItem.State));
-                        viewItem.SubItems.Add(registryItem.PathExtracted);
+                        viewItem.SubItems.Add(registryItem.Path);
 
                         if (registryItem.Type.HasFlag(StartupType.RegistryLocalMachine))
                         {
@@ -393,9 +393,9 @@ namespace Computer_Maintenance.View.Controls
                         break;
                     case TaskSchedulerItem taskSchedulerItem:
                         viewItem = new ListViewItem(taskSchedulerItem.File);
-                        viewItem.SubItems.Add(taskSchedulerItem.NameExtractedFromPath);
+                        viewItem.SubItems.Add(taskSchedulerItem.Path);
                         viewItem.SubItems.Add(taskSchedulerItem.State.ToString());
-                        viewItem.SubItems.Add(taskSchedulerItem.PathExtracted);
+                        viewItem.SubItems.Add(taskSchedulerItem.Path);
                         viewItem.SubItems.Add(taskSchedulerItem.Arguments);
                         viewItem.Tag = taskSchedulerItem;
                         break;

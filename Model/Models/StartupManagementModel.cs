@@ -87,7 +87,7 @@ namespace Computer_Maintenance.Model.Models
         }
         private void LoadRegistryStartupItems(RegistryKey registryRoot, StartupType startupType, List<StartupItemRegistry> collectionToAdd, string path)
         {
-            using (RegistryKey key = registryRoot.OpenSubKey(path))
+            using (RegistryKey? key = registryRoot.OpenSubKey(path))
             {
                 if (key != null)
                 {
@@ -95,17 +95,17 @@ namespace Computer_Maintenance.Model.Models
 
                     if (valueNames.Length > 0)
                     {
-
                         foreach (string valueName in valueNames)
                         {
-                            object value = key.GetValue(valueName);
-                            string extractedPath = ExtractPath(value?.ToString());
+                            object? value = key.GetValue(valueName);
+                            string? valueStr = value?.ToString();
+
+                            (string? pathExtracted, string[]? argrsExtracted) = CommandLineParser.Parse(valueStr);
 
                             StartupItemRegistry item = new StartupItemRegistry
                             {
-                                NameExtracted = GetNameExe(extractedPath),
                                 RegistryName = valueName,
-                                PathExtracted = extractedPath,
+                                Path = !string.IsNullOrWhiteSpace(pathExtracted) ? pathExtracted : valueStr ?? string.Empty,
                                 Type = startupType,
                                 State = GetStartupState(valueName, startupType)
                             };
@@ -118,7 +118,7 @@ namespace Computer_Maintenance.Model.Models
         }
         private void LoadWOW6432Node(RegistryKey registryRoot, StartupType startupType, List<StartupItemRegistry> collectionToAdd, string path)
         {
-            using (RegistryKey key = registryRoot.OpenSubKey(path))
+            using (RegistryKey? key = registryRoot.OpenSubKey(path))
             {
                 if (key != null)
                 {
@@ -128,14 +128,15 @@ namespace Computer_Maintenance.Model.Models
                     {
                         foreach (string valueName in valueNames)
                         {
-                            object value = key.GetValue(valueName);
-                            string extractedPath = ExtractPath(value?.ToString());
+                            object? value = key.GetValue(valueName);
+                            string? valueStr = value?.ToString();
+
+                            (string? pathExtracted, string[]? argrsExtracted) = CommandLineParser.Parse(valueStr);
 
                             StartupItemRegistry item = new StartupItemRegistry
                             {
-                                NameExtracted = GetNameExe(extractedPath),
                                 RegistryName = valueName,
-                                PathExtracted = extractedPath,
+                                Path = !string.IsNullOrWhiteSpace(pathExtracted) ? pathExtracted : valueStr ?? string.Empty,
                                 Is32Bit = true,
                                 Type = startupType,
                                 State = GetStartupState(valueName, startupType, is32Bit: true)
@@ -183,9 +184,7 @@ namespace Computer_Maintenance.Model.Models
                         TaskSchedulerItem item = new TaskSchedulerItem
                         {
                             File = task.Name,
-                            NameExtractedFromPath = GetNameExe(pathExtracted),
-                            PathExtracted = pathExtracted,
-                            OriginalPath = originalCmd,
+                            Path = pathExtracted,
                             Arguments = args,
                             State = task.State,
                             Type = startupType,
@@ -668,7 +667,7 @@ namespace Computer_Maintenance.Model.Models
         }
 
 
-        public void DeleteRegistryRecord(string registryName, string nameFile, StartupType startupType, bool is32Bit = false)
+        public void DeleteRegistryRecord(string registryName, StartupType startupType, bool is32Bit = false)
         {
             if (string.IsNullOrWhiteSpace(registryName)) { throw new Exception("Имя записи реестра не может быть пустым"); }
             RegistryKey? key = null;
@@ -704,8 +703,7 @@ namespace Computer_Maintenance.Model.Models
             }
             catch
             {
-                string msg = string.IsNullOrWhiteSpace(nameFile) ? registryName : nameFile;
-                throw new Exception($"Ну удалось удалить значение: {msg} из рестра");
+                throw new Exception($"Ну удалось удалить значение: {registryName} из рестра");
             }
             finally
             {
@@ -834,7 +832,7 @@ namespace Computer_Maintenance.Model.Models
             }
         }
 
-        private string ExtractPath(string path)
+        private string ExtractPath(string? path)
         {
             if (string.IsNullOrWhiteSpace(path)) { return string.Empty; }
 

@@ -67,11 +67,11 @@ namespace Computer_Maintenance.Presenter
                 }
                 else if (firstItem is StartupItemRegistry registryItem)
                 {
-                    _view.SelectedPath = (isFile: true, path: registryItem.PathExtracted);
+                    _view.SelectedPath = (isFile: true, path: registryItem.Path);
                 }
                 else if (firstItem is TaskSchedulerItem taskItem)
                 {
-                    _view.SelectedPath = (isFile: true, path: taskItem.PathExtracted);
+                    _view.SelectedPath = (isFile: true, path: taskItem.Path);
                     _view.LastFolderSelectionSource = taskItem.Type;
                 }
             }
@@ -79,7 +79,7 @@ namespace Computer_Maintenance.Presenter
             {
                 if (_selectedItems[0] is StartupItemRegistry registryItem)
                 {
-                    _view.SelectedPath = (isFile: false, path: registryItem.PathExtracted);
+                    _view.SelectedPath = (isFile: false, path: registryItem.Path);
                 }
                 else if (_selectedItems[0] is StartupItemFolder folderItem)
                 {
@@ -147,7 +147,7 @@ namespace Computer_Maintenance.Presenter
                 {
                     _model.ViewDetailTaskSchedulerItem(
                         taskSchedulerItem.Author, 
-                        taskSchedulerItem.OriginalPath,
+                        taskSchedulerItem.Path,
                         taskSchedulerItem.Description, 
                         taskSchedulerItem.Created, 
                         taskSchedulerItem.NextTimeStart, 
@@ -194,7 +194,7 @@ namespace Computer_Maintenance.Presenter
 
                     try
                     {
-                        _model.DeleteRegistryRecord(registry.RegistryName, registry.NameExtracted, registry.Type, registry.Is32Bit);
+                        _model.DeleteRegistryRecord(registry.RegistryName, registry.Type, registry.Is32Bit);
                     }
                     catch (Exception ex)
                     {
@@ -250,7 +250,7 @@ namespace Computer_Maintenance.Presenter
             {
                 if (item is StartupItemRegistry registryItem)
                 {
-                    if (_model.ChangeStateStartup(registryItem.RegistryName, registryItem.PathExtracted, registryItem.Type, registryItem.Is32Bit))
+                    if (_model.ChangeStateStartup(registryItem.RegistryName, registryItem.Path, registryItem.Type, registryItem.Is32Bit))
                     {
                         typesToRefresh.Add(registryItem.Type);
                     }
@@ -264,7 +264,7 @@ namespace Computer_Maintenance.Presenter
                 }
                 else if (item is TaskSchedulerItem taskSchedulerItem)
                 {
-                    if (_model.ChangeStateStartup(taskSchedulerItem.File, taskSchedulerItem.PathExtracted, taskSchedulerItem.Type))
+                    if (_model.ChangeStateStartup(taskSchedulerItem.File, taskSchedulerItem.Path, taskSchedulerItem.Type))
                     {
                         typesToRefresh.Add(taskSchedulerItem.Type);
                     }
@@ -292,7 +292,7 @@ namespace Computer_Maintenance.Presenter
             {
                 if (item is StartupItemRegistry registryItem)
                 {
-                    _model.CopyToClipboard(registryItem.PathExtracted);
+                    _model.CopyToClipboard(registryItem.Path);
                 }
                 else if (item is StartupItemFolder folderItem)
                 {
@@ -300,7 +300,7 @@ namespace Computer_Maintenance.Presenter
                 }
                 else if (item is TaskSchedulerItem taskSchedulerItem)
                 {
-                    _model.CopyToClipboard(taskSchedulerItem.PathExtracted);
+                    _model.CopyToClipboard(taskSchedulerItem.Path);
                 }
                 else
                 {

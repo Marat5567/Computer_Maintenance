@@ -6,9 +6,7 @@ namespace Computer_Maintenance.Model.Structs.StartupManagement
     public struct TaskSchedulerItem
     {
         public string File { get; set; }
-        public string NameExtractedFromPath { get; set; }
-        public string PathExtracted { get; set; }
-        public string OriginalPath { get; set; }
+        public string Path { get; set; }
         public string Arguments { get; set; }
         public TaskState State { get; set; }
         public string Author { get; set; }
