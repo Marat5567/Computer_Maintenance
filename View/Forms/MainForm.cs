@@ -25,7 +25,7 @@ namespace Computer_Maintenance
                     break;
                 case Access.User:
                     ApplicationAccess.CurrentAccess = Access.User;
-                    this.Text = "Обслуживание ПК [Ползователь]";
+                    this.Text = "Обслуживание ПК [Пользователь]";
                     break;
             }
 
