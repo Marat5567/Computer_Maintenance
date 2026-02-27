@@ -9,7 +9,6 @@ namespace Computer_Maintenance.View.Interfaces
         event EventHandler OpenExplorerClicked;
         event EventHandler ChangeStateSelectedItems;
         event EventHandler CopyClipboardClicked;
-        event EventHandler DeleteUnusedRecords_Click;
         event EventHandler DeleteRegistryRecordClick;
         event EventHandler ViewDetailClick;
         event EventHandler CompleteTaskClick;

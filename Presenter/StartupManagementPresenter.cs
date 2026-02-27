@@ -24,7 +24,6 @@ namespace Computer_Maintenance.Presenter
             _view.OpenExplorerClicked += OnOpenExplorerClicked;
             _view.ChangeStateSelectedItems += OnChangeStateSelectedItems;
             _view.CopyClipboardClicked += OnCopyClipboardClicked;
-            _view.DeleteUnusedRecords_Click += OnDeleteUnusedRecords_Click;
             _view.DeleteRegistryRecordClick += OnDeleteRegistryRecord;
             _view.ViewDetailClick += OnViewDetailClick;
             _view.CompleteTaskClick += OnCompleteTaskClick;
@@ -43,7 +42,53 @@ namespace Computer_Maintenance.Presenter
 
         private void OnDeleteTaskItem(object s, EventArgs e)
         {
+            if (_selectedItems.Count == 0)
+            {
+                return;
+            }
 
+            DialogResult msgBoxResult = MessageService.ShowMessage(
+                owner: null,
+                msg: $"Удалить выбранные значения ({_selectedItems.Count} шт.)?",
+                headerName: "Удаление из планировщика задач",
+                buttons: MessageBoxButtons.YesNo,
+                icon: MessageBoxIcon.Question);
+
+            if (msgBoxResult != DialogResult.Yes)
+                return;
+
+            StartupType typeRefresh = StartupType.None;
+
+            foreach (object item in _selectedItems)
+            {
+                if (item is TaskSchedulerItem taskSchedulerItem)
+                {
+
+                    typeRefresh = taskSchedulerItem.Type;
+
+                    try
+                    {
+                        _model.DeleteTaskItem(taskSchedulerItem.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageService.ShowMessage(
+                            owner: null,
+                            msg: $"{ex.Message} файл: {taskSchedulerItem.Name}",
+                            headerName: "Ошибка",
+                            buttons: MessageBoxButtons.OK,
+                            icon: MessageBoxIcon.Error);
+                        continue;
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            RefreshStartupItems(typeRefresh);
+            _selectedItems.Clear();
         }
 
         private void UpdateSelectedPathInfo(StartupType type)
@@ -75,33 +120,17 @@ namespace Computer_Maintenance.Presenter
                 if (firstItem is StartupItemFolder folderItem)
                 {
                     _currentSelectedPath = folderItem.Path;
-                    //_view.SelectedPath = (isFile: true, path: folderItem.PathExtracted);
-                    //_view.LastFolderSelectionSource = folderItem.Type;
                 }
                 else if (firstItem is StartupItemRegistry registryItem)
                 {
                     _currentSelectedPath = registryItem.Path;
-                    //_view.SelectedPath = (isFile: true, path: registryItem.Path);
                 }
                 else if (firstItem is TaskSchedulerItem taskItem)
                 {
                     _currentSelectedPath = taskItem.Path;
-                    //_view.SelectedPath = (isFile: true, path: taskItem.Path);
-                    //_view.LastFolderSelectionSource = taskItem.Type;
                 }
             }
-            //else
-            //{
-            //    if (_selectedItems[0] is StartupItemRegistry registryItem)
-            //    {
-            //        _view.SelectedPath = (isFile: false, path: registryItem.Path);
-            //    }
-            //    else if (_selectedItems[0] is StartupItemFolder folderItem)
-            //    {
-            //        _view.SelectedPath = (isFile: false, path: folderItem.Path);
-            //        _view.LastFolderSelectionSource = folderItem.Type;
-            //    }
-            //}
+
         }
 
         private void OnLoadControl(object s, EventArgs e)
@@ -202,10 +231,7 @@ namespace Computer_Maintenance.Presenter
             {
                 if (item is StartupItemRegistry registry)
                 {
-                    if (typeRefresh == StartupType.None)
-                    {
-                        typeRefresh = registry.Type;
-                    }
+                    typeRefresh = registry.Type;
 
                     try
                     {
@@ -229,26 +255,6 @@ namespace Computer_Maintenance.Presenter
             }
 
             RefreshStartupItems(typeRefresh);
-            _selectedItems.Clear();
-        }
-
-        private void OnDeleteUnusedRecords_Click(object s, EventArgs e)
-        {
-            _model.DeleteUnusedRecords_Click(StartupType.RegistryCurrentUser);
-            RefreshStartupItems(StartupType.RegistryCurrentUser);
-
-            _model.DeleteUnusedRecords_Click(StartupType.RegistryLocalMachine);
-            RefreshStartupItems(StartupType.RegistryLocalMachine);
-
-            _model.DeleteUnusedRecords_Click(StartupType.RegistryLocalMachine, true);
-            RefreshStartupItems(StartupType.RegistryLocalMachine);
-
-            _model.DeleteUnusedRecords_Click(StartupType.StartupFolderCurrentUser);
-            RefreshStartupItems(StartupType.StartupFolderCurrentUser);
-
-            _model.DeleteUnusedRecords_Click(StartupType.StartupFolderAllUsers);
-            RefreshStartupItems(StartupType.StartupFolderAllUsers);
-
             _selectedItems.Clear();
         }
 
