@@ -35,7 +35,6 @@
             buttonRefreshDrives = new Button();
             tableLayoutPanelElementsPosition = new TableLayoutPanel();
             panelButtons = new Panel();
-            buttonStartScan = new Button();
             buttonStartScanClean = new Button();
             flowLayoutPanelInfoDrives = new FlowLayoutPanel();
             checkBoxSaveFileDeleteFailLogs = new CheckBox();
@@ -126,23 +125,12 @@
             // panelButtons
             // 
             panelButtons.AutoSize = true;
-            panelButtons.Controls.Add(buttonStartScan);
             panelButtons.Controls.Add(buttonStartScanClean);
             panelButtons.Dock = DockStyle.Fill;
             panelButtons.Location = new Point(3, 9);
             panelButtons.Name = "panelButtons";
             panelButtons.Size = new Size(879, 54);
             panelButtons.TabIndex = 8;
-            // 
-            // buttonStartScan
-            // 
-            buttonStartScan.Location = new Point(156, 1);
-            buttonStartScan.Name = "buttonStartScan";
-            buttonStartScan.Size = new Size(147, 50);
-            buttonStartScan.TabIndex = 7;
-            buttonStartScan.Text = "Начать сканирование";
-            buttonStartScan.UseVisualStyleBackColor = true;
-            buttonStartScan.Click += buttonStartScan_Click;
             // 
             // buttonStartScanClean
             // 
@@ -224,7 +212,6 @@
         private Button buttonStartClean;
         private Button buttonRefreshDrives;
         private CheckBox checkBoxSaveFileDeleteFailLogs;
-        private Button buttonStartScan;
         private Panel panelButtons;
     }
 }

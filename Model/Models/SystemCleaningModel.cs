@@ -3,7 +3,6 @@ using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.Enums.SystemCleaning;
 using Computer_Maintenance.Model.Services.SystemCleaning;
 using Computer_Maintenance.Model.Structs.SystemCleaning;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 

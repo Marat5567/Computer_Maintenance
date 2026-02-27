@@ -19,10 +19,8 @@ namespace Computer_Maintenance.Presenters
             _view = view;
             _model = model;
 
-            _view.DirectoryPath += OnChangeDirectory;
             _view.LoadDrivesRequested += OnLoadDrivesRequested;
             _view.StartScanCleanClicked += async (s,e) => await OnStartScanCleanAsync(s,e);
-            _view.StartScanClicked += async (s, e) => await OnStartScanAsync(s, e);
             _view.StartCleanClicked += OnStartClean;
         }
 
@@ -103,40 +101,10 @@ namespace Computer_Maintenance.Presenters
                 {
                     ShowError($"Ошибка: {ex.Message}");
                 }
-                _view.ShowCheckedDriveSafe(dInfo, cleaningInformations, ShowTypeInfo.CleaningInfo);
+                _view.ShowCheckedDriveSafe(dInfo, cleaningInformations);
             }
             _scanClicked = false;
         }
-
-        private async Task OnStartScanAsync(object sender, EventArgs e)
-        {
-            _selectedDrives = _view.GetSelectedDrives();
-
-            if (_selectedDrives == null || _selectedDrives.Count == 0 || _selectedDrives.Count > 1)
-            {
-                ShowInfo("Выберите только один диск");
-                _view.ClearInfoDrives();
-                return;
-            }
-            if (_scanClicked)
-            {
-                ShowInfo("Дождитесь начатого сканирования");
-                return;
-            }
-            _scanClicked = true;
-            _view.ClearInfoDrives();
-
-            foreach (DriveInfo dInfo in _selectedDrives)
-            {
-                List<DirectoryContents> directoryContents = new List<DirectoryContents>();
-                directoryContents = _model.GetDirectoryContents(dInfo.Name);
-
-                _view.ShowCheckedDriveForSizeInfo(directoryContents);
-
-            }
-            _scanClicked = false;
-        }
-
         private void OnStartClean(object sender, EventArgs e)
         {
             if (_selectedDrives == null || _selectedDrives.Count == 0)
@@ -190,16 +158,6 @@ namespace Computer_Maintenance.Presenters
             }
         }
 
-        private void OnChangeDirectory(object sender, EventArgs e)
-        {
-            if (_view.DirectoryPath != String.Empty)
-            {
-                List<DirectoryContents> directoryContents = new List<DirectoryContents>();
-                directoryContents = _model.GetDirectoryContents( _view.DirectoryPath);
-
-                _view.ShowCheckedDriveForSizeInfo(directoryContents);
-            }
-        }
 
         private void ShowInfo(string message)
         {
