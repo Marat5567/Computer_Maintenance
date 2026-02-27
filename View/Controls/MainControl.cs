@@ -1,6 +1,4 @@
-﻿using Computer_Maintenance.Core.Managers;
-using Computer_Maintenance.Core.Services;
-using Computer_Maintenance.View.Interfaces;
+﻿using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Controls
 {
@@ -17,11 +15,6 @@ namespace Computer_Maintenance.Controls
         }
         private void MainControl_Load(object sender, EventArgs e)
         {
-            ThemeManager.ThemeChanged += ApplyTheme;
-        }
-        public void ApplyTheme()
-        {
-            ThemeService.RefreshTheme(this);
         }
 
         private void pictureBoxHome_Click(object sender, EventArgs e)
@@ -41,14 +34,12 @@ namespace Computer_Maintenance.Controls
             ClearCell(tableLayoutPanelContolsPositions, 0, 0);
             tableLayoutPanelContolsPositions.Controls.Add(control, 0, 0);
             
-            ApplyTheme();
         }
 
 
         //Метод вызываемый из presenter для обновления темы
         private void ClearCell(TableLayoutPanel panel, int column, int row)
         {
-            // Получаем контрол из конкретной ячейки
             Control control = panel.GetControlFromPosition(column, row);
 
             if (control != null)

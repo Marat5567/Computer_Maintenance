@@ -1,10 +1,13 @@
-﻿namespace Computer_Maintenance.View.Forms
+﻿using Computer_Maintenance.Core.Services;
+
+namespace Computer_Maintenance.View.Forms
 {
     public partial class ViewDetailTaskSchedulerItem_Form : Form
     {
         public ViewDetailTaskSchedulerItem_Form(string author, string originalScript, string description, DateTime createTime, DateTime nextTimeStart, DateTime oldTimeStart, int resultLastStart, string trigger)
         {
             InitializeComponent();
+            ThemeService.RefreshTheme(this);
 
             textBoxAuthor.Text = author;
             richTextBoxFullScript.AppendText(originalScript);

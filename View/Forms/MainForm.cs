@@ -14,6 +14,7 @@ namespace Computer_Maintenance
         public MainForm()
         {
             InitializeComponent();
+            ThemeService.RefreshTheme(this);
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -37,11 +38,6 @@ namespace Computer_Maintenance
         {
             control.Dock = DockStyle.Fill;
             this.Controls.Add(control);
-        }
-        public void RestartApplication()
-        {
-            //Application.Restart();
-            //Environment.Exit(0);
         }
         public void ApplyTheme()
         {

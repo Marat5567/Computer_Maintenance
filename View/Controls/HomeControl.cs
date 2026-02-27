@@ -15,7 +15,6 @@ namespace Computer_Maintenance.Controls
         private void HomeControl_Load(object sender, EventArgs e)
         {
             InitElements();
-            ThemeService.RefreshTheme(this);
         }
 
         private void InitElements()

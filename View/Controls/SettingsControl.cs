@@ -1,4 +1,5 @@
-﻿using Computer_Maintenance.Model.Enums;
+﻿using Computer_Maintenance.Core.Services;
+using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.View.Interfaces;
 
 namespace Computer_Maintenance.Controls
@@ -21,6 +22,7 @@ namespace Computer_Maintenance.Controls
         public SettingsControl()
         {
             InitializeComponent();
+            ThemeService.RefreshTheme(this);
         }
 
         private void SettingsControl_Load(object sender, EventArgs e)

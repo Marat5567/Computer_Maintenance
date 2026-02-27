@@ -11,10 +11,6 @@ namespace Computer_Maintenance.Core.Services
 
             foreach (Control child in control.Controls)
             {
-                if (child is TabControl)
-                {
-                    continue;
-                }
                 RefreshTheme(child);
             }
 

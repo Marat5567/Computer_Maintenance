@@ -25,10 +25,10 @@ namespace Computer_Maintenance.Controls
         public SystemCleaningControl()
         {
             InitializeComponent();
+            ThemeService.RefreshTheme(this);
         }
         private void SystemCleaningControl_Load(object sender, EventArgs e)
         {
-            ThemeService.RefreshTheme(this);
             LoadDrivesRequested?.Invoke(this, EventArgs.Empty);
         }
 

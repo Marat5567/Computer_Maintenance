@@ -1,6 +1,4 @@
-﻿using Computer_Maintenance.Core.Managers;
-
-namespace Computer_Maintenance.Controls
+﻿namespace Computer_Maintenance.Controls
 {
     partial class MainControl
     {
@@ -17,7 +15,6 @@ namespace Computer_Maintenance.Controls
         {
             if (disposing && (components != null))
             {
-                ThemeManager.ThemeChanged -= ApplyTheme;
                 components.Dispose();
             }
             base.Dispose(disposing);

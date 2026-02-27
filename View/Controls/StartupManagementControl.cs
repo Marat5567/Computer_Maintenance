@@ -23,8 +23,9 @@ namespace Computer_Maintenance.View.Controls
         public StartupManagementControl()
         {
             InitializeComponent();
-            labelInfo.Text = String.Empty;
+            ThemeService.RefreshTheme(this);
 
+            labelInfo.Text = String.Empty;
 
             listViewFolderCurrentUser.ItemSelectionChanged += OnListViewSelectedIndexChanged;
             listViewFolderCurrentUser.MouseDown += OnListViewSelectedIndexChanged;
@@ -79,8 +80,6 @@ namespace Computer_Maintenance.View.Controls
             Init_ListViewFolderAllUsers();
             Init_ListViewTaskScheduler();
             InitTabControl();
-
-            ThemeService.RefreshTheme(this);
             LoadControl?.Invoke(this, EventArgs.Empty);
         }
 

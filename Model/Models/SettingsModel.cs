@@ -10,16 +10,20 @@ namespace Computer_Maintenance.Model.Models
         public SettingsModel()
         {
         }
+
         public void SaveDataToJson(SettingsData saveData)
         {
             if (saveData != null)
             {
-                saveData.BackgroundColor = ColorTranslator.ToHtml(ApplicationSettings.BackgroundColor);
-                saveData.TextColor = ColorTranslator.ToHtml(ApplicationSettings.TextColor);
+                if (string.IsNullOrWhiteSpace(saveData.BackgroundColor))
+                    saveData.BackgroundColor = ColorTranslator.ToHtml(ApplicationSettings.BackgroundColor);
+                if (string.IsNullOrWhiteSpace(saveData.TextColor))
+                    saveData.TextColor = ColorTranslator.ToHtml(ApplicationSettings.TextColor);
 
                 JsonService.Save(_fileName, saveData);
             }
         }
+
         public SettingsData LoadDataFromJson()
         {
             SettingsData data = JsonService.Load<SettingsData>(_fileName);

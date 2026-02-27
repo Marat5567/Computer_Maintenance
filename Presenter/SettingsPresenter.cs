@@ -1,5 +1,4 @@
-﻿using Computer_Maintenance.Core.Managers;
-using Computer_Maintenance.Model.Config;
+﻿using Computer_Maintenance.Model.Config;
 using Computer_Maintenance.Model.DTO;
 using Computer_Maintenance.Model.Enums;
 using Computer_Maintenance.Model.Models;
@@ -24,23 +23,47 @@ namespace Computer_Maintenance.Presenters
 
         private void OnPressedSave(object sender, EventArgs e)
         {
+            // Формируем цвета согласно выбранной теме и сохраняем в файл.
+            var (bg, text) = GetThemeColors(_settingsView.ThemeTypeSelected);
+
             SettingsData saveData = new SettingsData()
             {
                 SelectedTheme = _settingsView.ThemeTypeSelected,
+                BackgroundColor = ColorTranslator.ToHtml(bg),
+                TextColor = ColorTranslator.ToHtml(text)
             };
+
             _settingsModel.SaveDataToJson(saveData);
+
+            var result = MessageBox.Show(
+                "Изменения темы будут применены после перезапуска приложения.\nПерезапустить сейчас?",
+                "Перезапуск приложения",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    Application.Restart();
+                }
+                catch
+                {
+                    Environment.Exit(0);
+                }
+            }
         }
+
         private void OnInitItemsState(object sender, EventArgs e)
         {
             _settingsView.SetRadioButtonTheme(ApplicationSettings.CurrentTheme);
-
         }
+
         private void OnThemeTypeSelected(object sender, EventArgs e)
         {
-            ApplicationSettings.CurrentTheme = _settingsView.ThemeTypeSelected;
-            (ApplicationSettings.BackgroundColor, ApplicationSettings.TextColor) = GetThemeColors(ApplicationSettings.CurrentTheme);
-
-            ThemeManager.SetTheme(_settingsView.ThemeTypeSelected);
+            // Только локальная установка выбора — не применяем тему в рантайме.
+            // Сохранение и перезапуск управляют окончательным применением.
         }
 
         private (Color background, Color text) GetThemeColors(ThemeType themeType)
